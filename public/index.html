@@ -109,7 +109,17 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #settingsPanel input::placeholder,#settingsPanel textarea::placeholder{color:#627c8b;opacity:1}
 #settingsPanel select,#settingsPanel input:not([type=checkbox]),#settingsPanel textarea{color:#123d55 !important;background:#fff !important}
 </style>
-</head>
+<style id="blueChatStyles">
+#blueChat{position:fixed;right:12px;bottom:88px;width:min(325px,calc(100vw - 24px));max-height:45vh;z-index:105;display:flex;flex-direction:column;border:2px solid #61bbd9;border-radius:16px;background:#f0fbff;color:#173d59;box-shadow:0 8px 30px #07385c55;overflow:hidden;font-size:12px}
+#blueChat .blChatHead{display:flex;justify-content:space-between;align-items:center;background:#b5eaff;padding:6px 10px}#blueChat .blChatHead button{padding:4px 8px;font-size:11px}
+#blueChat .blChatTarget{padding:7px 10px;display:flex;gap:7px;align-items:center}#blChatRecipient{width:65%;max-width:220px;background:white;color:#12384d;padding:6px;font-size:12px}
+#blChatMessages{min-height:80px;max-height:145px;overflow-y:auto;padding:7px 10px;background:white;overflow-wrap:anywhere}
+#blueChat .blMessage{padding:4px 0;border-bottom:1px solid #dcecf3}#blueChat .blMessage b{color:#146f99}
+#blChatForm{display:flex;padding:6px;gap:4px}#blChatInput{min-width:0;flex:1;border:1px solid #9ecad9;background:white;color:#1c455a;border-radius:8px;padding:8px}#blChatForm button{padding:5px 10px}
+#blueChat small{padding:3px 8px 7px;color:#436778}#blueChat.collapsed .blChatTarget,#blueChat.collapsed #blChatMessages,#blueChat.collapsed #blChatForm,#blueChat.collapsed small{display:none}
+@media(max-width:760px){#blueChat{right:8px;bottom:calc(75px + env(safe-area-inset-bottom));width:min(290px,calc(100vw - 16px));max-height:42vh}#blueChat.collapsed{width:auto}}
+</style>
+<meta name="blue-log-maintenance-version" content="v49.0-mauritius-3d-fauna"></head>
 <body>
 <div class="shell">
 <header>
@@ -237,8 +247,8 @@ const spots=[
 {name:'사이판 · 마나가하',type:'lagoon',colors:['#a7fbef','#5ddfe8','#158fbd','#084a7d'],info:'나비고기·비늘돔·자리돔류 등 산호초 열대어가 모래와 산호 주변을 무리 지어 헤엄쳐요. 새하얀 산호모래와 투명한 라군이 아름다운 곳. 열대어와 어린 암초상어를 만날 수 있어요.',animals:['butterfly','parrotfish','damselfish','wrasse','surgeonfish','turtle','shark'],special:'parrotfish'},
 {name:'사이판 · 켄싱턴 앞 바다',type:'lagoon',colors:['#90f6ef','#40cfe0','#1076aa','#08406e'],info:'열대어 무리와 가오리류가 나타나는 밝은 모래·산호 환경을 표현했어요. 청록빛 연안과 부드러운 모래 해저. 가끔 대형 가오리가 우아하게 지나갑니다.',animals:['butterfly','parrotfish','surgeonfish','damselfish','ray','wrasse','turtle'],special:'ray'},
 {name:'사이판 · 그로토',type:'cave',colors:['#127fd4','#0c4eaa','#0a2f71','#07163f'],info:'푸른 동굴 바깥의 암초어류와 외해성 어류를 표현했어요. 검은 암벽과 푸른 동굴빛이 특징인 유명 포인트. 빛기둥과 깊은 블루가 매력적이에요.',animals:['trevally','butterfly','surgeonfish','shark','turtle','fusilier'],special:'shark'},
-{name:'제주 · 범섬',type:'cliff',colors:['#39bfd0','#1f7ea9','#11496e','#082744'],info:'화산암과 연산호 주변의 자리돔류·놀래기류와 작은 무척추동물을 표현했어요. 화산암 지형과 수중 절벽, 해조와 연산호가 어우러진 제주 남쪽 바다.',animals:['damselfish','wrasse','rockfish','softcoral','nudibranch','octopus'],special:'nudibranch'},
-{name:'제주 · 코난비치',type:'volcanic',colors:['#98f6e2','#43d6cf','#1d8492','#0d415d'],info:'제주 현무암과 얕은 암초에 어울리는 온대 생물을 표현했어요. 에메랄드빛 얕은 바다와 현무암 지형이 인상적인 포인트.',animals:['wrasse','rockfish','damselfish','octopus','urchin'],special:'octopus'},
+{name:'제주 · 범섬',type:'cliff',colors:['#39bfd0','#1f7ea9','#11496e','#082744'],info:'화산암과 연산호 주변의 자리돔류·놀래기류와 작은 무척추동물을 표현했어요. 화산암 지형과 수중 절벽, 해조와 연산호가 어우러진 제주 남쪽 바다.',animals:['dolphin','damselfish','wrasse','rockfish','softcoral','nudibranch','octopus'],special:'nudibranch'},
+{name:'제주 · 코난비치',type:'volcanic',colors:['#98f6e2','#43d6cf','#1d8492','#0d415d'],info:'제주 현무암과 얕은 암초에 어울리는 온대 생물을 표현했어요. 에메랄드빛 얕은 바다와 현무암 지형이 인상적인 포인트.',animals:['dolphin','wrasse','rockfish','damselfish','octopus','urchin'],special:'octopus'},
 {name:'울릉도 · 학포해변',type:'rock',colors:['#72cce0','#2c87b4','#15507f','#082d53'],info:'울릉도 조사에서 확인된 자리돔·돌돔류·놀래기류·볼락류 중심으로 구성했어요. 맑고 푸른 울릉도 바다. 바위와 해조류 사이에 뿔소라와 작은 생물들이 숨어 있어요.',animals:['damselfish','blackseabream','rockfish','wrasse','urchin','octopus'],special:'blackseabream'},
 {name:'울릉도 · 와달리 터널 인근',type:'arch',colors:['#59b7d7','#2574a4','#13486d','#071f40'],info:'울릉도 암반과 수중 지형에 어울리는 온대·난류성 어류를 표현했어요. 암석 틈과 수중 아치 느낌의 지형이 펼쳐지는 상상형 포인트.',animals:['damselfish','blackseabream','rockfish','wrasse','trevally','octopus'],special:'blackseabream'},
 {name:'경북 · 영덕',type:'rock',colors:['#76d8e0','#3a99b8','#1a658b','#103855'],info:'동해 암반 주변의 볼락류·놀래기류·문어 등을 중심으로 구성했어요. 동해의 바위 해안과 짙푸른 수중 풍경을 모티브로 한 탐험 구역. 해조류와 암반 주변 생물을 관찰해요. 실제 포인트와 생물 출현은 다를 수 있어요.',animals:['rockfish','wrasse','octopus','urchin','blackseabream'],special:'rockfish'},
@@ -246,9 +256,20 @@ const spots=[
 {name:'필리핀 · 모알보알',type:'wall',colors:['#74f4ef','#2cb6de','#136aad','#082d6b'],info:'모알보알의 정어리 무리와 열대 암초어류를 풍성하게 재현했어요. 절벽을 따라 은빛 정어리 떼가 몰려다니는 장관이 유명해요.',animals:['sardine','trevally','turtle','butterfly','damselfish'],special:'sardine'},
 {name:'일본 · 케라마 제도',type:'coral',colors:['#8af0ff','#4abce8','#216dad','#0e376f'],info:'산호초와 나비고기·자리돔류·비늘돔이 어우러져요. 케라마 블루라 불리는 맑은 바다와 밝은 산호초 지형.',animals:['butterfly','damselfish','parrotfish','turtle','surgeonfish','wrasse'],special:'turtle'},
 {name:'인도네시아 · 라자암팟',type:'coral',colors:['#75f5dd','#29c1c1','#1a6791','#0b2f59'],info:'다양한 산호초 어류와 퓨질리어·꽃동멸류 무리를 표현했어요. 화려한 산호초와 높은 생물다양성이 특징인 바다.',animals:['butterfly','damselfish','parrotfish','fusilier','anthias','surgeonfish','ray'],special:'ray'},
-{name:'이집트 · 다합',type:'hole',colors:['#37d1e1','#148bbf','#0a4d89','#091f5b'],info:'홍해 특유의 화려한 암초어류와 꽃동멸류·쥐돔류를 표현했어요. 홍해의 강렬한 청색과 깊이를 느낄 수 있는 블루홀 계열 지형.',animals:['anthias','surgeonfish','butterfly','fusilier','grouper','trevally'],special:'grouper'}
+{name:'이집트 · 다합',type:'hole',colors:['#37d1e1','#148bbf','#0a4d89','#091f5b'],info:'홍해 특유의 화려한 암초어류와 꽃동멸류·쥐돔류를 표현했어요. 홍해의 강렬한 청색과 깊이를 느낄 수 있는 블루홀 계열 지형.',animals:['anthias','surgeonfish','butterfly','fusilier','grouper','trevally'],special:'grouper'},
+{name:'모리셔스 · 서부 외해',type:'whale',colors:['#8ef0f7','#45c9e8','#157bb1','#0a3f72'],info:'모리셔스 외해의 깊은 블루와 개방적인 대양 환경을 바탕으로 재구성했어요. 계절에 따라 혹등고래와 향유고래로 유명한 바다로 알려져 있으며, 돌고래와 대형 해양생물을 만나는 상상형 포인트예요.',animals:['dolphin','humpback','spermwhale','ray','turtle','fusilier'],special:'humpback'}
 ];
 const fauna={
+
+ squid:['오징어','낮음','중층을 헤엄치는 두족류예요.','가까이 쫓지 않고 관찰해요.','🦑'],
+ shrimp:['새우','낮음','바위·산호 틈과 해저 부근에서 볼 수 있는 작은 갑각류예요.','서식지를 건드리지 않아요.','🦐'],
+ crab:['게','낮음','암반이나 모래 바닥을 걷는 갑각류예요.','손대지 않고 관찰해요.','🦀'],
+ pod:['물고기 떼','낮음','무리를 이루어 움직이며 포식자에게 대응하는 물고기들이에요.','무리를 가로지르지 않아요.','🐟'],
+ dolphin:['돌고래','보호','대양이나 연안에서 무리지어 헤엄치는 해양 포유류예요.','거리 유지와 관찰 수칙을 지켜요.','🐬'],
+ whale:['고래','보호','먼 바다를 이동하는 대형 해양 포유류예요.','안전한 거리에서 관찰해요.','🐋'],
+ humpback:['혹등고래','보호','긴 가슴지느러미와 도약으로 잘 알려진 대형 고래예요.','진로를 가로막지 않고 멀리서 관찰해요.','🐋'],
+ spermwhale:['향유고래','보호','커다란 머리와 깊은 잠수로 유명한 대형 고래예요.','접근하지 말고 충분한 거리를 유지해요.','🐋'],
+
 parrotfish:['비늘돔류','낮음','산호와 해조류가 있는 열대 암초에서 활동하는 화려한 어류예요.','서식지나 산호를 건드리지 않고 관찰해요.','🐠'],
 damselfish:['자리돔류','낮음','열대와 온대 암초에서 무리를 이루는 종이 많아요. 지역마다 종이 달라요.','군집을 방해하지 않아요.','🐟'],
 surgeonfish:['쥐돔류','주의','열대 산호초 주변에서 흔히 볼 수 있는 옆으로 납작한 어류예요.','꼬리 쪽 가시를 조심하고 거리를 지켜요.','🐠'],
@@ -381,11 +402,23 @@ function updateHUD(){const coinLabel=document.getElementById('blCoinHud');if(coi
 function spawnScene(){
   objects=[]; corals=[]; collectibles=[];
   const s=spots[idx];
+  const additionalBySpot={
+    0:['shrimp','crab','pod'],1:['shrimp','squid','pod'],2:['squid','pod','dolphin'],
+    3:['squid','crab','pod','dolphin'],4:['shrimp','crab','pod','dolphin'],5:['squid','crab','pod','dolphin'],
+    6:['squid','crab','pod'],7:['squid','crab','pod','dolphin','whale'],
+    8:['squid','shrimp','crab','pod','dolphin'],9:['shrimp','pod','dolphin'],
+    10:['shrimp','crab','pod','dolphin'],11:['squid','shrimp','crab','pod','dolphin'],
+    12:['squid','shrimp','crab','pod','dolphin'],13:['squid','shrimp','crab','pod','dolphin','humpback','spermwhale']
+  };
+  const oceanExtra=additionalBySpot[idx]||['crab','shrimp','pod'];
+  const possibleAnimals=(idx===13
+    ? [...s.animals.filter(k=>!['whale','humpback','spermwhale','dolphin'].includes(k)),...oceanExtra.filter(k=>!['whale','dolphin','humpback','spermwhale'].includes(k))]
+    : [...s.animals,...oceanExtra.filter(k=>!['whale','dolphin','humpback','spermwhale'].includes(k))]);
   $('locdesc').textContent=s.info+' 대표 생물(게임 표현): '+s.animals.map(k=>fauna[k]?.[0]||k).join(' · ')+'. 실제 관찰 종은 계절·수심·장소에 따라 달라집니다.'; $('shell').style.display=(SHELL_HABITATS[idx]?.hornShell>0)?'block':'none'; $('place').value=String(idx);
   for(let i=0;i<48;i++) corals.push({x:rand(40,worldW-40),y:rand(1940,3200),h:rand(28,95),kind:i%5});
   let visibleUrchins=0;
-  for(let i=0;i<(idx<3?100:idx===11?125:idx===9?130:idx===10?95:idx===12?105:66);i++){
-    const key=s.animals[Math.floor(Math.random()*s.animals.length)];
+  for(let i=0;i<(idx<3?100:idx===11?125:idx===9?130:idx===10?95:idx===12?105:idx===13?115:66);i++){
+    const key=possibleAnimals[Math.floor(Math.random()*possibleAnimals.length)];
     const x=rand(120,worldW-120),y=rand(260,2600),z=rand(.22,.9);
     // A visible sea urchin must be a collectible, not a decorative fish.
     // Restrict the number and habitat to avoid implying they occur everywhere.
@@ -398,8 +431,32 @@ function spawnScene(){
     }
     objects.push({key,rare:false,x,y,baseY:y,size:rand(16,34),speed:rand(.15,.45)*(Math.random()<.5?-1:1),seed:rand(0,999),z});
   }
-  const sp=s.special;
-  objects.push({key:sp,rare:true,x:rand(700,4000),y:rand(500,2200),baseY:rand(500,2200),size:sp==='ray'?92:sp==='sardine'?40:sp==='shark'?58:52,speed:sp==='ray'?0.2:0.28,seed:rand(0,999),z:rand(0.35,0.82)});
+  if(idx===13){
+    // Mauritius keeps only a few memorable giant whales in the quiet offshore area.
+    for(const [kind,x,y,size,speed,seed,z] of [
+      ['humpback',1180,405,250,.021,110,.64]
+    ]){
+      objects.push({key:kind,rare:true,x,y,baseY:y,size,speed,seed,z});
+    }
+  }
+  // Larger marine mammals appear only occasionally in representative ocean habitats.
+  for(const kind of ['dolphin','whale','humpback','spermwhale']){
+    if(idx===13 && ['whale','humpback','spermwhale'].includes(kind)) continue;
+    if(oceanExtra.includes(kind)&&Math.random()<(kind==='dolphin'?(idx===13?.22:.57):(idx===13?0:.32))){
+      const x=rand(900,worldW-900),y=kind==='dolphin'?rand(280,1350):rand(310,1000);
+      const size=kind==='spermwhale'?rand(170,215):kind==='humpback'?rand(165,205):kind==='whale'?rand(92,125):rand(49,65);
+      objects.push({key:kind,rare:true,x,y,baseY:y,size,speed:rand(.09,.2),seed:rand(0,999),z:rand(.4,.8)});
+    }
+  }
+  // Different shoal sizes: rare large schools can cover more than half of the 2D viewport.
+  // Spawn one nearby, moving through the scene; other pod sightings remain smaller.
+  if(idx!==13 || Math.random()<0.85){
+    const giantSchool=Math.random()<0.52;
+    objects.push({key:'pod',rare:false,x:rand(520,1250),y:rand(410,820),baseY:rand(410,820),
+      size:giantSchool?rand(73,95):rand(28,43),speed:(Math.random()<.5?-1:1)*rand(.12,.24),seed:rand(0,999),z:rand(.55,.78),giantSchool});
+  }
+  const sp=idx===13?'ray':s.special;
+  objects.push({key:sp,rare:true,x:rand(700,4000),y:rand(500,2200),baseY:rand(500,2200),size:sp==='ray'?92:sp==='sardine'?40:sp==='shark'?58:sp==='humpback'?122:sp==='spermwhale'?132:52,speed:sp==='ray'?0.2:(sp==='humpback'||sp==='spermwhale'?0.16:0.28),seed:rand(0,999),z:rand(0.35,0.82)});
   if(sp==='sardine') for(let i=0;i<24;i++) objects.push({key:'sardine',rare:i===0,x:rand(1000,2200),y:rand(800,1450),baseY:rand(800,1450),size:16,speed:0.45,seed:rand(0,999),z:rand(0.4,0.72)});
   spawnCollectibles();
   diver.x=620; diver.y=surfaceY-8; diver.z=0.55; surfaceLane=0.45; diver.vx=0; diver.vy=0; diver.vz=0; cam.x=0; cam.y=0; elapsed=0; session=false; phase='surface'; startSurfaceRest(); updateHUD(); notify('새로운 바다에 도착했어요! 코인을 찾고, 암반 지역에서는 드물게 발견되는 전복·뿔소라도 탐색해 보세요.');
@@ -671,8 +728,83 @@ function draw2DSeaCave(t){
  ctx.restore();
 }
 function drawBubbles(t){for(let i=0;i<48;i++){const x=(i*71+Math.sin(i+t*.0008)*22-cam.x*.08)%1050-20; const y=(i*87 - t*.05*(1+i%3)+2200-cam.y*.15)%780-80; ctx.strokeStyle='rgba(224,255,255,.55)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,1.8+(i%3),0,Math.PI*2); ctx.stroke();}}
-function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5); if(p.x<-120||p.x>W+120||p.y<-120||p.y>H+120) return null; ctx.save(); ctx.translate(p.x,p.y+Math.sin(t*.0012+o.seed)*5); if(o.speed<0) ctx.scale(-1,1); const k=o.key; const z=(o.size/25)*p.scale; ctx.scale(z,z);
-  if(k==='ray'){ctx.fillStyle='#345f70'; ctx.beginPath(); ctx.moveTo(-65,0); ctx.quadraticCurveTo(-12,-42,0,-8); ctx.quadraticCurveTo(35,-42,71,1); ctx.quadraticCurveTo(10,34,0,14); ctx.quadraticCurveTo(-24,33,-65,0); ctx.fill(); ctx.strokeStyle='#203d4f'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,14); ctx.lineTo(-6,85); ctx.stroke();}
+function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5); if(p.x<-(o.key==='pod'?570:120)||p.x>W+(o.key==='pod'?570:120)||p.y<-(o.key==='pod'?340:120)||p.y>H+(o.key==='pod'?340:120)) return null; ctx.save(); ctx.translate(p.x,p.y+Math.sin(t*.0012+o.seed)*5); if(o.speed<0) ctx.scale(-1,1); const k=o.key; const z=(o.size/25)*p.scale; ctx.scale(z,z);
+  if(['squid','shrimp','crab','pod','dolphin','whale','humpback','spermwhale'].includes(k)){
+    const ellipse=(x,y,rx,ry,color)=>{ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()};
+    if(k==='squid'){
+      // Defined triangular mantle, flared fins, paired eyes and ten independent tentacles.
+      ctx.fillStyle='#d38dae';ctx.strokeStyle='#9a597e';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(4,-49);ctx.bezierCurveTo(-21,-25,-21,-10,-15,12);ctx.quadraticCurveTo(0,20,15,12);ctx.bezierCurveTo(21,-12,21,-27,4,-49);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.fillStyle='#e5a7bf';ctx.beginPath();ctx.moveTo(-9,-33);ctx.lineTo(-27,-28);ctx.lineTo(-18,-8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(13,-33);ctx.lineTo(28,-28);ctx.lineTo(18,-8);ctx.closePath();ctx.fill();
+      ellipse(0,17,17,10,'#e9b5cc');ellipse(-11,16,4.2,4.4,'#fff');ellipse(11,16,4.2,4.4,'#fff');ellipse(-10,16,2.2,2.8,'#24304d');ellipse(12,16,2.2,2.8,'#24304d');
+      for(let j=0;j<10;j++){const x=-11+j*2.4, long=(j===0||j===9);ctx.strokeStyle=j%2?'#e4a2c0':'#c17b9f';ctx.lineWidth=long?2.8:2;ctx.beginPath();ctx.moveTo(x,23);ctx.bezierCurveTo(x+(j-4)*1.1,39,x+Math.sin(t*.003+j)*10,53,x+Math.sin(t*.004+j)*13,long?85:65);ctx.stroke();}
+    }else if(k==='shrimp'){
+      ctx.lineCap='round';for(let j=0;j<7;j++){const xx=-21+j*6, yy=8-5*Math.sin(j/6*Math.PI);ellipse(xx,yy,6.5-j*.25,7.8-j*.5,j%2?'#f3a58d':'#ffc09b');ctx.strokeStyle='#cf7467';ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(xx+3,yy-6);ctx.lineTo(xx+3,yy+6);ctx.stroke();if(j<5){ctx.strokeStyle='#e89d8a';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(xx,yy+5);ctx.quadraticCurveTo(xx-3,yy+15,xx-7,yy+19);ctx.stroke()}}ellipse(24,0,10,8,'#ffc29c');ellipse(29,-3,2.3,2.3,'#253e46');ctx.strokeStyle='#ffd1bb';ctx.lineWidth=1.4;for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(31,-1);ctx.bezierCurveTo(43,-25*sign,56,-30*sign,65,-11*sign);ctx.stroke()}ctx.fillStyle='#f09985';ctx.beginPath();ctx.moveTo(-23,8);ctx.lineTo(-42,-4);ctx.lineTo(-37,13);ctx.lineTo(-43,24);ctx.closePath();ctx.fill();
+    }else if(k==='crab'){
+      ellipse(0,0,19,12,'#de7557');ctx.strokeStyle='#c75b47';ctx.lineWidth=4;for(const side of [-1,1]){for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(side*13,i*5-7);ctx.lineTo(side*(25+i*3),i*9-13);ctx.stroke()}ctx.beginPath();ctx.moveTo(side*12,-8);ctx.lineTo(side*23,-22);ctx.stroke();ellipse(side*26,-23,7,5,'#f2aa7b')}ellipse(-7,-7,3,3,'#fff');ellipse(7,-7,3,3,'#fff');
+    }else if(k==='pod'){
+      // v48: wider, living bait-ball: independent paths, slow pulses and silver flashes.
+      const pulse=1+.13*Math.sin(t*.00065+o.seed);
+      const schoolCount=o.giantSchool?220:66;
+       for(let i=0;i<schoolCount;i++){
+         const a=i*2.399963229728653+o.seed*.019,ring=Math.sqrt((i+.5)/schoolCount);
+        const drift=t*.00037,warp=Math.sin(a*2.3+drift*2+o.seed)*10;
+        const px=(Math.cos(a+drift*.35)*(105*ring+warp)+Math.sin(t*.00053+i*.37)*7)*pulse;
+        const py=(Math.sin(a+drift*.23)*(49*ring+warp*.34)+Math.cos(t*.00076+i*.41)*5)*pulse;
+        const heading=Math.sin(t*.0011+i*.77+o.seed)*.36;
+        ctx.save();ctx.translate(px,py);ctx.rotate(heading);
+        const flash=.5+.5*Math.sin(t*.007+i*2.17+o.seed);
+        ctx.globalAlpha=.64+.36*flash;
+        ellipse(0,0,4.4+ring*1.6,2+ring*.5,flash>.72?'#ffffff':i%3?'#a8d4e5':'#e6f8ff');
+        ctx.fillStyle=flash>.72?'#e7fdff':'#85b8d1';ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(-8,-3);ctx.lineTo(-8,3);ctx.fill();
+        if(flash>.91){ctx.strokeStyle='#eaffff';ctx.lineWidth=.85;ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(0,4);ctx.stroke();}
+        ctx.restore();
+      }
+    }else if(k==='humpback'||k==='spermwhale'||k==='whale'){
+      // V52: distinct whale profiles rather than the earlier two oval shapes.
+      const sperm=k==='spermwhale', col=sperm?'#617383':'#718da3';
+      ctx.fillStyle=col;ctx.strokeStyle='#42596c';ctx.lineWidth=.8;
+      ctx.beginPath();
+      if(sperm){ctx.moveTo(-78,-13);ctx.bezierCurveTo(-50,-30,-15,-30,16,-26);ctx.lineTo(69,-26);ctx.quadraticCurveTo(82,-26,82,-12);ctx.lineTo(82,12);ctx.quadraticCurveTo(69,27,51,23);ctx.bezierCurveTo(2,40,-45,28,-78,12);}
+      else {ctx.moveTo(-77,-7);ctx.bezierCurveTo(-58,-23,-17,-33,14,-27);ctx.bezierCurveTo(44,-25,68,-15,82,-3);ctx.quadraticCurveTo(90,13,66,18);ctx.bezierCurveTo(23,28,-37,34,-77,11);}
+      ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.fillStyle=sperm?'#b7cad4':'#d7e5ed';ctx.beginPath();ctx.moveTo(-54,12);ctx.quadraticCurveTo(0,39,65,17);ctx.quadraticCurveTo(25,36,-54,12);ctx.fill();
+      // Horizontal tail is visibly lobed; a humpback has exceptionally long pectoral fins.
+      ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-74,0);ctx.quadraticCurveTo(-105,-22,-119,-34);ctx.quadraticCurveTo(-119,-8,-98,2);ctx.quadraticCurveTo(-120,15,-118,35);ctx.quadraticCurveTo(-99,24,-74,6);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(-22,-20);ctx.lineTo(-8,-44);ctx.quadraticCurveTo(5,-43,4,-19);ctx.closePath();ctx.fill();
+      ctx.fillStyle=sperm?'#859ba8':'#b4d0df';ctx.beginPath();ctx.moveTo(4,14);
+      if(sperm){ctx.quadraticCurveTo(-12,31,-20,45);ctx.quadraticCurveTo(12,41,29,18)}
+      else{ctx.quadraticCurveTo(-21,54,-58,91);ctx.quadraticCurveTo(-13,83,34,19)}ctx.closePath();ctx.fill();
+      ctx.fillStyle='#172c3d';ctx.beginPath();ctx.arc(sperm?60:63,sperm?-5:-4,3.1,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#455b6e';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(sperm?51:62,15);ctx.quadraticCurveTo(42,24,10,24);ctx.stroke();
+      if(!sperm){ctx.strokeStyle='#e3edf2';ctx.lineWidth=.8;for(let j=0;j<7;j++){ctx.beginPath();ctx.moveTo(33-j*9,21);ctx.quadraticCurveTo(30-j*9,30,24-j*9,31);ctx.stroke()}}
+      else {ctx.fillStyle='#354959';ctx.beginPath();ctx.ellipse(58,-23,6,2.5,0,0,Math.PI*2);ctx.fill();}
+    }else{
+      const whale=['whale','humpback','spermwhale'].includes(k),main=k==='spermwhale'?'#667785':k==='humpback'?'#6f8397':whale?'#607d93':'#86b8c9';ellipse(0,0,whale?53:37,whale?20:13,main);ellipse(whale?42:27,-3,whale?17:13,whale?12:9,main);
+      ctx.fillStyle=main;ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(whale?-73:-56,-20);ctx.lineTo(whale?-65:-50,3);ctx.lineTo(whale?-73:-56,20);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(-2,-9);ctx.lineTo(11,-27);ctx.lineTo(18,-5);ctx.fill();ellipse(whale?48:33,-6,2,2,'#15364a');
+    }
+    if(o.rare){ctx.strokeStyle='#fff3ad';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-35,7,0,Math.PI*2);ctx.stroke()}
+    ctx.restore();return {o,x:p.x,y:p.y,scale:p.scale};
+  }
+  if(k==='ray'){
+    // Smooth wing outline; undulates rather than rotating rectangular wing pieces.
+    const flap=Math.sin(t*.0031+o.seed)*14;
+    const grad=ctx.createLinearGradient(-40,-50,50,48);
+    grad.addColorStop(0,'#497891');grad.addColorStop(.48,'#81abbc');grad.addColorStop(1,'#3e687f');
+    ctx.fillStyle=grad;ctx.strokeStyle='#2c5064';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(61,-2); // rounded snout, facing right
+    ctx.bezierCurveTo(42,-12,23,-17,6,-16);
+    ctx.bezierCurveTo(-8,-20,-33,-46-flap,-91,-66-flap);
+    ctx.bezierCurveTo(-75,-29,-54,-9,-29,1);
+    ctx.bezierCurveTo(-53,12,-76,35+flap,-91,66+flap);
+    ctx.bezierCurveTo(-34,45+flap,0,22,17,18);
+    ctx.bezierCurveTo(33,16,50,8,61,-2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#9ec5d2';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(18,-10);ctx.quadraticCurveTo(-30,-21,-77,-53-flap);ctx.moveTo(18,10);ctx.quadraticCurveTo(-35,26,-77,53+flap);ctx.stroke();
+    // Whip tail begins behind the body; never a triangular fish tail.
+    ctx.strokeStyle='#385b70';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-28,1);ctx.bezierCurveTo(-60,4,-111,4+flap*.3,-166,10);ctx.stroke();
+    ctx.fillStyle='#213c4d';for(const yy of [-7,7]){ctx.beginPath();ctx.arc(37,yy,2.3,0,Math.PI*2);ctx.fill();}
+    ctx.strokeStyle='#e0f3f5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(57,-7);ctx.quadraticCurveTo(65,-13,68,-17);ctx.moveTo(57,7);ctx.quadraticCurveTo(65,13,68,17);ctx.stroke();
+  }
   else if(k==='turtle'){ctx.fillStyle='#5f7846'; ctx.beginPath(); ctx.ellipse(0,0,30,22,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#b3c287'; ctx.lineWidth=2.5; ctx.stroke(); for(let v of [-1,1]){ctx.fillStyle='#7b9362'; ctx.beginPath(); ctx.ellipse(-2,v*19,22,8,v*.35,0,Math.PI*2); ctx.fill();} ctx.beginPath(); ctx.arc(34,2,10,0,Math.PI*2); ctx.fill();}
   else if(k==='octopus'){ctx.fillStyle='#ae66a5'; ctx.beginPath(); ctx.ellipse(0,-6,17,22,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ae66a5'; ctx.lineWidth=5; for(let j=0;j<7;j++){ctx.beginPath(); ctx.moveTo(-13+j*4,8); ctx.quadraticCurveTo(-23+j*9,25+Math.sin(t*.004+j)*8,-24+j*9,35); ctx.stroke();}}
   else if(k==='shell'){ctx.fillStyle='#bf9d73'; ctx.beginPath(); ctx.moveTo(-18,12); ctx.lineTo(0,-28); ctx.lineTo(18,12); ctx.closePath(); ctx.fill(); ctx.strokeStyle='#f1cf92'; for(let j=-2;j<=2;j++){ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(j*8,12); ctx.stroke();}}
@@ -815,9 +947,12 @@ function drawCoastLandmark(t){
    poly([[0,349],[0,293],[95,203],[141,242],[225,147],[312,232],[379,199],[498,349]],'#a97a63');
    poly([[450,349],[542,265],[645,185],[711,235],[782,146],[864,239],[940,218],[1000,296],[1000,354]],'#be9273');
    poly([[0,349],[73,300],[210,325],[340,345],[1000,350]],'#e5c99e');
- }
- // distinctive place caption attached to environment
- const names=['마나가하 섬','켄싱턴 비치 리조트','그로토 해식동굴','범섬 화산암 절벽','코난비치 현무암 해변','학포해변 해안절벽','와달리 터널 인근 절벽','영덕 창포말등대 · 해맞이공원','욕지도 출렁다리 · 암석 해안','모알보알 해안','케라마 제도 섬들','라자암팟 석회암 섬','다합 시나이 산맥'];
+  }else if(k===13){ // Mauritius volcanic island skyline
+    poly([[0,349],[0,312],[86,278],[158,235],[222,252],[306,188],[392,236],[474,210],[557,287],[648,244],[742,269],[829,215],[917,244],[1000,318],[1000,349]],'#4f856f');
+    poly([[0,349],[118,320],[244,336],[403,315],[552,342],[713,324],[872,339],[1000,349]],'#81b497');
+  }
+  // distinctive place caption attached to environment
+ const names=['마나가하 섬','켄싱턴 비치 리조트','그로토 해식동굴','범섬 화산암 절벽','코난비치 현무암 해변','학포해변 해안절벽','와달리 터널 인근 절벽','영덕 창포말등대 · 해맞이공원','욕지도 출렁다리 · 암석 해안','모알보알 해안','케라마 제도 섬들','라자암팟 석회암 섬','다합 시나이 산맥','모리셔스 화산섬 외해'];
  ctx.fillStyle='#05384fba';ctx.beginPath();ctx.roundRect(25,260,Math.min(360,160+names[k].length*16),48,12);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 23px system-ui';ctx.fillText('📍 '+names[k],39,292);
 }
 
@@ -831,7 +966,49 @@ function drawSurface(t){
  if(idx===3){for(let i=0;i<8;i++){const cyc=(t*.00027+i*.143)%1;if(cyc>.72)continue;const u=cyc/.72,x=(85+i*102+u*165)%1050-25,lift=Math.sin(Math.PI*u)**2*(36+i%3*10),y=352+(i%3)*17-lift;
  ctx.save();ctx.translate(x,y);ctx.rotate(-.23+u*.48);ctx.fillStyle='#b9dce6';ctx.beginPath();ctx.ellipse(0,0,15,3.3,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#eefaff';ctx.beginPath();ctx.moveTo(-2,-1);ctx.lineTo(-12,-12);ctx.lineTo(8,-3);ctx.closePath();ctx.fill();ctx.fillStyle='#a5ccd9';ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(-22,-5);ctx.lineTo(-21,5);ctx.closePath();ctx.fill();ctx.restore();}}
  if([3,5,7,8,9].includes(idx)){for(let i=0;i<6;i++){const x=((i*227+t*.018*(i%2?1:-1))%1220+1220)%1220-110,y=98+i%3*36+Math.sin(t*.0017+i)*14,wing=Math.sin(t*.009+i)*9;ctx.strokeStyle='#f7ffff';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-14,y+wing);ctx.quadraticCurveTo(x-7,y-7,x,y);ctx.quadraticCurveTo(x+8,y-7,x+17,y-wing);ctx.stroke();}}
- // purchased watercraft are visible in the surface scene
+   // Dolphin breaching in every dolphin habitat, especially both Jeju sites.
+  if(idx!==13 && (spots[idx].animals.includes('dolphin')||[2,3,4,5,7,8,9,10,11,12].includes(idx))){
+    for(let i=0;i<3;i++){
+      const cycle=((t*.00011+i*.32)%1+1)%1;
+      if(cycle>.48)continue;
+      const q=cycle/.48, leap=Math.sin(q*Math.PI),xx=((110+i*335+t*.013)%1200)-90,yy=350-leap*(95+i*26);
+      ctx.save();ctx.translate(xx,yy);ctx.rotate(-.40+q*.85);ctx.fillStyle='#91bdca';ctx.beginPath();ctx.moveTo(-46,4);ctx.bezierCurveTo(-22,-18,16,-19,47,-5);ctx.quadraticCurveTo(54,1,43,8);ctx.bezierCurveTo(0,23,-27,14,-46,4);ctx.fill();
+      ctx.fillStyle='#769eaf';ctx.beginPath();ctx.moveTo(-12,-8);ctx.lineTo(-8,-26);ctx.lineTo(6,-10);ctx.fill();ctx.beginPath();ctx.moveTo(-39,4);ctx.lineTo(-63,-12);ctx.lineTo(-58,6);ctx.lineTo(-62,22);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#263f4b';ctx.beginPath();ctx.arc(30,-5,2,0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.strokeStyle='#dcfbff99';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(xx,351,20+q*28,4+q*3,0,0,Math.PI*2);ctx.stroke();
+    }
+  }
+  if(idx===13){
+    const whales=[
+      {x:286,kind:'humpback',phase:0}
+    ];
+    whales.forEach(({x,kind,phase})=>{
+      const bob=Math.sin(t*.0012+phase)*3;
+      if(kind==='humpback'){
+        ctx.save();ctx.translate(x,349+bob);ctx.rotate(-.12);
+        ctx.fillStyle='#6d8397';ctx.strokeStyle='#466072';ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(-10,-2);ctx.quadraticCurveTo(-26,-44,-18,-67);ctx.quadraticCurveTo(-3,-48,0,-16);ctx.quadraticCurveTo(4,-49,19,-66);ctx.quadraticCurveTo(27,-42,13,-3);ctx.quadraticCurveTo(3,8,-10,-2);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.restore();
+        ctx.strokeStyle='#d8fbff99';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,353,25,6,0,0,Math.PI*2);ctx.stroke();
+      }else{
+        const spout=Math.sin(t*.005+phase)*.5+.5;
+        ctx.save();ctx.translate(x,346+bob);
+        ctx.fillStyle='#607383';ctx.strokeStyle='#445a67';ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(-54,3);ctx.quadraticCurveTo(-14,-18,40,-11);ctx.quadraticCurveTo(58,-5,60,4);ctx.quadraticCurveTo(20,10,-20,12);ctx.quadraticCurveTo(-44,11,-54,3);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.fillStyle='#a4b8c3';ctx.beginPath();ctx.moveTo(-9,6);ctx.quadraticCurveTo(19,11,43,6);ctx.quadraticCurveTo(15,15,-9,6);ctx.fill();
+        ctx.restore();
+        if(spout>.25){
+          ctx.strokeStyle='rgba(232,252,255,.82)';ctx.lineWidth=2.1;
+          for(let j=0;j<4;j++){
+            const rise=14+j*10+spout*28;
+            ctx.beginPath();ctx.moveTo(x+9+j*2,345);ctx.quadraticCurveTo(x+3+j*5,345-rise*.55,x+12+j*3,345-rise);ctx.stroke();
+          }
+        }
+        ctx.strokeStyle='#d8fbff99';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+5,352,36,7,0,0,Math.PI*2);ctx.stroke();
+      }
+    });
+  }
+// purchased watercraft are visible in the surface scene
  const vessel=GEAR_CATALOG.find(g=>g.id===gearState.equipped.vessel);
  if(vessel){ctx.save();ctx.translate(720,355+Math.sin(t*.0019)*3);ctx.fillStyle='#eefcff';ctx.strokeStyle='#235c76';ctx.lineWidth=3;const large=vessel.id==='boat_cruise',yacht=vessel.id==='boat_yacht',ww=large?235:yacht?150:102;ctx.beginPath();ctx.moveTo(-ww/2,0);ctx.lineTo(ww/2,0);ctx.lineTo(ww*.34,26);ctx.lineTo(-ww*.37,26);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#d6ebf2';ctx.fillRect(-ww*.25,-(large?68:30),ww*.5,large?69:32);ctx.strokeRect(-ww*.25,-(large?68:30),ww*.5,large?69:32);if(yacht){ctx.strokeStyle='#eefcff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(5,-30);ctx.lineTo(5,-115);ctx.stroke();ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(7,-110);ctx.lineTo(70,-30);ctx.lineTo(7,-30);ctx.closePath();ctx.fill();}if(large){ctx.fillStyle='#28698b';for(let q=0;q<7;q++)ctx.fillRect(-66+q*21,-45,12,14)}ctx.restore();}
  // equipped game buoy on surface, separate from real-world safety equipment
@@ -1000,7 +1177,7 @@ spawnScene(); requestAnimationFrame(render);
    function eye(x,y,r=8){ellipse(x,y,r,r,'#fff','#1e3d50',2);ellipse(x+2,y,r*.55,r*.65,'#102937','#102937',1);ellipse(x+3,y-3,2.1,2.1,'#fff','#fff',0)}
    // facing right; tail left, head right
    if(kind==='ray'){
-     path([[43,124],[117,79],[192,55],[282,90],[334,124],[265,154],[188,170],[108,154]],'#9bbccc','#45617a',5);
+     path([[319,124],[281,111],[226,115],[149,53],[32,9],[82,108],[134,126],[80,144],[34,247],[157,188],[231,136],[283,138]],'#9bbccc','#45617a',5);
      path([[69,132],[125,125],[186,123],[245,123],[318,130]],'#53728c','#53728c',2);
      path([[115,145],[89,186],[82,240],[93,226],[106,185],[132,151]],'#567b92');
      eye(282,111,7);ellipse(272,134,4,3,'#365064','#365064',0);
@@ -1009,7 +1186,43 @@ spawnScene(); requestAnimationFrame(render);
      ellipse(180,126,92,52,'#4d7b49','#345c38',5);
      for(let i=0;i<7;i++){const a=i*Math.PI*2/7;ellipse(180+Math.cos(a)*57,126+Math.sin(a)*30,25,16,i%2?'#739b61':'#99ac67','#4f794c',2)}
      ellipse(282,124,29,24,'#99bd88','#567d5a',4);eye(294,117,6);
-   }else if(kind==='octopus'){
+   }else if(kind==='dolphin'||kind==='whale'||kind==='humpback'||kind==='spermwhale'){
+      const giant=kind!=='dolphin';
+      const whaleColor=kind==='humpback'?0x667a8e:kind==='spermwhale'?0x5d6c79:0x7fa0b6;
+      const body=add(new T.SphereGeometry(size*(giant?1.05:.78),18,14),giant?whaleColor:0x7eaec6,0,0,0,g,{roughness:.72});
+      body.scale.set(giant?(kind==='spermwhale'?3.25:3.0):2.4,giant?(kind==='humpback'?.95:.88):.76,giant?(kind==='humpback'?1.15:.98):.82);
+      const head=add(new T.SphereGeometry(size*(giant?.62:.42),16,12),giant?(kind==='spermwhale'?0x6d7b88:0x8fa5b2):0x9ed2e5,size*(giant?1.45:1.05),size*(kind==='spermwhale'?.12:.03),0,g,{roughness:.68});
+      head.scale.set(kind==='spermwhale'?1.35:1.0,kind==='spermwhale'?1.05:.92,kind==='spermwhale'?.9:1.0);
+      const tailPivot=new T.Group();tailPivot.position.set(-size*(giant?1.95:1.65),0,0);g.add(tailPivot);
+      const tailA=add(new T.BoxGeometry(size*(giant?1.55:1.1),size*.1,size*(giant?.8:.55)),0xd9eef5,-size*.15,size*.35,0,tailPivot,{roughness:.82});tailA.rotation.z=.62;
+      const tailB=add(new T.BoxGeometry(size*(giant?1.55:1.1),size*.1,size*(giant?.8:.55)),0xd9eef5,-size*.15,-size*.35,0,tailPivot,{roughness:.82});tailB.rotation.z=-.62;parts.tail=[tailPivot,tailA,tailB];
+      for(const side of [-1,1]){
+         const fin=add(new T.BoxGeometry(size*(giant?.78:.45),size*.08,size*(giant?.32:.22)),giant?0xc6d9e4:0xccecf6,size*(giant?.2:.08),-size*.08,side*size*(giant?.62:.42),g,{roughness:.78});
+         fin.rotation.x=side*.72;parts.fins.push(fin);
+         if(kind==='humpback'){const longFin=add(new T.BoxGeometry(size*.96,size*.08,size*.2),0xe7f4f8,size*.08,-size*.02,side*size*.84,g,{roughness:.72});longFin.rotation.x=side*1.02;parts.fins.push(longFin);}
+      }
+      if(kind!=='dolphin'){const dorsal=add(new T.ConeGeometry(size*.12,size*.42,5),0x495a67,-size*.15,size*.34,0,g,{roughness:.84});dorsal.rotation.z=Math.PI;}
+      addEye(size*(giant?1.8:1.28),size*.08,size*.16,.05);addEye(size*(giant?1.8:1.28),size*.08,-size*.16,.05);
+   }else if(kind==='squid'){
+      const mantle=add(new T.CylinderGeometry(size*.1,size*.34,size*1.2,10),0xd2879f,size*.15,0,0,g,{roughness:.76});mantle.rotation.z=-Math.PI/2;
+      add(new T.SphereGeometry(size*.26,10,10),0xe2a6bc,size*.72,0,0,g,{roughness:.72});
+      addEye(size*.84,size*.06,size*.11,.04);addEye(size*.84,size*.06,-size*.11,.04);
+      for(const side of [-1,1]){const fin=add(new T.BoxGeometry(size*.42,size*.05,size*.26),0xe8b1c6,size*.02,0,side*size*.22,g,{roughness:.72});fin.rotation.y=side*.35;parts.fins.push(fin);}
+      for(let k=0;k<10;k++){const a=(k-4.5)*.09;const arm=add(new T.CylinderGeometry(size*.018,size*.04,size*.95,6),0xc06d8d,size*.95,-size*.3,a*size*3.1,g,{roughness:.84});arm.rotation.z=-1.28+a;parts.arms.push(arm);}
+   }else if(kind==='shrimp'){
+      const body=add(new T.SphereGeometry(size*.18,14,10),0xffbf8f,0,0,0,g,{roughness:.7});body.scale.set(2.3,.8,.85);
+      for(let j=0;j<5;j++){const seg=add(new T.SphereGeometry(size*(.13-j*.008),12,9),j%2?0xf0a587:0xffc19e,-size*(.19+j*.14),-size*.028*j,0,g);seg.scale.set(.8,.85,.85)}
+      const tail=add(new T.BoxGeometry(size*.4,size*.08,size*.28),0xf6a57a,-size*.5,0,0,g,{roughness:.76});tail.rotation.y=.18;parts.tail=[tail];
+      add(new T.SphereGeometry(size*.2,8,8),0xffd0aa,size*.48,.02,0,g,{roughness:.68});
+      for(const side of [-1,1]){for(let j=0;j<3;j++){const leg=add(new T.CylinderGeometry(size*.01,size*.02,size*.46,5),0xffd9bf,size*(-.05+j*.12),-size*.18,side*size*(.1+j*.04),g,{roughness:.86});leg.rotation.z=side*.45;parts.arms.push(leg);}const ant=add(new T.CylinderGeometry(size*.006,size*.01,size*.8,4),0xfff2dc,size*.57,size*.12,side*size*.06,g,{roughness:.9});ant.rotation.z=-1.08;ant.rotation.x=side*.18;parts.arms.push(ant);}
+      addEye(size*.58,size*.06,size*.07,.03);addEye(size*.58,size*.06,-size*.07,.03);
+   }else if(kind==='crab'){
+      const body=add(new T.SphereGeometry(size*.3,12,10),0xbf624b,0,0,0,g,{roughness:.85});body.scale.set(1.35,.55,1.05);
+      for(const side of [-1,1]){for(let j=0;j<3;j++){const leg=add(new T.CylinderGeometry(size*.018,size*.028,size*.56,5),0xe49577,size*(j*.16-.12),-size*.16,side*size*(.34+j*.02),g,{roughness:.88});leg.rotation.x=side*.92;parts.arms.push(leg);}const clawArm=add(new T.CylinderGeometry(size*.02,size*.028,size*.5,5),0xe49577,size*.28,size*.08,side*size*.34,g,{roughness:.84});clawArm.rotation.x=side*.82;parts.arms.push(clawArm);const claw=add(new T.BoxGeometry(size*.18,size*.08,size*.22),0xd46c57,size*.48,size*.18,side*size*.48,g,{roughness:.8});claw.rotation.x=side*.48;parts.fins.push(claw);}
+      addEye(size*.16,size*.15,size*.08,.03);addEye(size*.16,size*.15,-size*.08,.03);
+   }else if(kind==='pod'){
+      for(let i=0;i<6;i++){const mini=new T.Group();mini.position.set((i-2.5)*size*.26,Math.sin(i)*size*.04,((i%3)-1)*size*.12);g.add(mini);const body=add(new T.SphereGeometry(size*.08,8,8),0xaed4e4,0,0,0,mini,{roughness:.72});body.scale.set(1.8,.6,.65);const tailL=add(new T.BoxGeometry(size*.14,size*.02,size*.08),0xe8f4fa,-size*.12,size*.03,0,mini,{roughness:.8});tailL.rotation.z=.8;const tailR=add(new T.BoxGeometry(size*.14,size*.02,size*.08),0xe8f4fa,-size*.12,-size*.03,0,mini,{roughness:.8});tailR.rotation.z=-.8;}}
+   else if(kind==='octopus'){
      for(let i=0;i<8;i++){const a=i*.78; q.beginPath();q.moveTo(184,159);q.bezierCurveTo(85+i*27,169+Math.sin(a)*41,90+i*23,218-22*Math.sin(a),34+i*43,219+Math.cos(a)*14);q.strokeStyle=i%2?'#e8a4ca':'#a960a3';q.lineWidth=15;q.lineCap='round';q.stroke();}
      ellipse(195,103,58,67,'#d586b9','#935c94',5);ellipse(195,153,53,31,'#be74a9','#935c94',4);
      eye(174,118,9);eye(213,118,9);
@@ -1060,12 +1273,132 @@ spawnScene(); requestAnimationFrame(render);
       m.position.set(x,y,z);parent.add(m);return m;
    };
    const addEye=(x,y,z,r=.07)=>{add(new T.SphereGeometry(r,8,8),0xffffff,x,y,z,g,{roughness:.2});add(new T.SphereGeometry(r*.52,8,8),0x111826,x+r*.18,y,z+r*.02,g,{roughness:.15})};
-   if(kind==='ray'){
-      const body=add(new T.SphereGeometry(size*.92,14,12),0x7695aa,0,0,0,g,{roughness:.72});body.scale.set(1.8,.16,1.34);
-      const left=add(new T.BoxGeometry(size*2.0,size*.06,size*.95),0x88a8b9,0,0,size*.86,g,{roughness:.76});left.rotation.y=.2;left.rotation.z=.16;
-      const right=add(new T.BoxGeometry(size*2.0,size*.06,size*.95),0x88a8b9,0,0,-size*.86,g,{roughness:.76});right.rotation.y=-.2;right.rotation.z=-.16;
-      const tail=add(new T.CylinderGeometry(size*.035,size*.08,size*3.8,7),dark,-size*2.15,-size*.02,0,g,{roughness:.8});tail.rotation.z=Math.PI/2;parts.tail=[tail];parts.wings=[left,right];
-      addEye(size*.68,size*.05,size*.18,.05);addEye(size*.68,size*.05,-size*.18,.05);
+   if(['dolphin','humpback','spermwhale'].includes(kind)){
+      const whale=kind!=='dolphin', sperm=kind==='spermwhale';
+      const blue=sperm?0x637584:kind==='humpback'?0x6d8295:0x7caabd;
+      const underside=sperm?0xb4c1ca:0xd3e3e9;
+      // Anatomically distinguishable body, tail flukes, fins and head.
+      const body=add(new T.SphereGeometry(size*.8,36,24),blue,0,0,0,g,{roughness:.82});
+      body.scale.set(whale?2.85:2.25,whale?.94:.71,whale?1.00:.70);
+      const throat=add(new T.SphereGeometry(size*.67,28,18),underside,size*.48,-size*.30,0,g,{roughness:.86});
+      throat.scale.set(whale?2.05:1.7,whale?.54:.4,whale?.91:.65);
+      const head=add(new T.SphereGeometry(size*(sperm?.79:whale?.65:.39),32,22),blue,size*(sperm?1.81:whale?1.66:1.15),size*(sperm?.13:.02),0,g,{roughness:.8});
+      head.scale.set(sperm?1.5:1.22,sperm?1.12:.83,sperm?1.03:.88);
+      if(sperm){
+        const forehead=add(new T.SphereGeometry(size*.55,28,20),0x738794,size*2.31,size*.20,0,g,{roughness:.83});
+        forehead.scale.set(.77,.93,1.06);
+      }else if(whale){
+        for(const side of [-1,1]){
+          for(let j=0;j<7;j++){
+            const tubercle=add(new T.SphereGeometry(size*.043,8,7),0x95a8b4,size*(1.38+j*.19),size*.23,side*size*(.28+.035*Math.sin(j)),g,{roughness:.93});
+          }
+        }
+        for(let j=0;j<7;j++){
+          const pleat=add(new T.CylinderGeometry(size*.012,size*.012,size*2.0,6),0xabc3cd,size*.73,-size*.61,(j-3)*size*.15,g,{roughness:.94});
+          pleat.rotation.z=Math.PI/2;
+        }
+      }
+      if(whale){
+        for(const side of [-1,1]){
+          add(new T.SphereGeometry(size*.085,16,12),0x101c29,size*1.75,size*.16,side*size*.73,g,{roughness:.3});
+          const pectoral=add(new T.SphereGeometry(size*.27,20,12),sperm?0x5a6f7d:0x8ea6b9,-size*.32,-size*.32,side*size*1.35,g,{roughness:.8});
+          pectoral.scale.set(2.4,.25,5.4);pectoral.rotation.y=side*.25;
+        }
+        if(sperm){const jaw=add(new T.SphereGeometry(size*.51,24,18),0x526575,size*2.07,-size*.47,0,g);jaw.scale.set(1.38,.36,1.25);}
+        else {const rostrum=add(new T.SphereGeometry(size*.39,24,16),0x708b9f,size*2.0,-size*.12,0,g);rostrum.scale.set(1.9,.29,1.4);}
+      }
+      const tailPivot=new T.Group();tailPivot.position.set(-size*(whale?2.12:1.6),0,0);g.add(tailPivot);
+      const stem=add(new T.CylinderGeometry(size*.15,size*.22,size*(whale?1.1:.72),12),blue,-size*.31,0,0,tailPivot,{roughness:.84});
+      stem.rotation.z=Math.PI/2;
+      for(const side of [-1,1]){
+        const geometry=new T.BufferGeometry();
+        const zz=side;
+        geometry.setAttribute('position',new T.Float32BufferAttribute([
+           -size*.44,0,0,
+           -size*.10,size*.06,side*size*.25,
+           -size*.88,size*.03,side*size*(whale?1.19:.83),
+           -size*.44,0,0,
+           -size*.88,size*.03,side*size*(whale?1.19:.83),
+           -size*.38,-size*.12,side*size*.60
+        ],3));
+        geometry.computeVertexNormals();
+        const fin=new T.Mesh(geometry,mat(sperm?0x8496a3:0xc2d5df,{side:T.DoubleSide,roughness:.84}));
+        tailPivot.add(fin);
+        const upper=new T.SphereGeometry(size*(whale?.85:.53),14,9);
+        const pectoral=add(upper,kind==='humpback'?0xc0d1db:blue,size*(whale?.15:.12),-size*.15,side*size*(whale?1.36:.63),g,{roughness:.87});
+        pectoral.scale.set(whale?2.05:1.5,whale?.14:.17,whale?.30:.35);
+        pectoral.rotation.y=side*.31;
+        pectoral.rotation.x=side*.30;
+        parts.fins.push(pectoral);
+        if(kind==='humpback'){
+          for(let j=0;j<6;j++){
+            add(new T.SphereGeometry(size*.055,8,7),0xf0f4f1,
+              size*(.22+j*.16),-size*.18,side*size*(1.44+j*.085),g,{roughness:.95});
+          }
+        }
+        const eye=add(new T.SphereGeometry(size*.057,12,10),0x101e2a,
+               size*(sperm?2.03:whale?1.77:1.16),size*.18,side*size*(sperm?.77:whale?.56:.27),g,{roughness:.2});
+        add(new T.SphereGeometry(size*.015,8,7),0xe3f8ff,
+            eye.position.x+size*.01,eye.position.y+size*.013,eye.position.z+side*size*.014,g,{roughness:.1});
+      }
+      parts.tail=[tailPivot];
+      const dorsal=add(new T.ConeGeometry(size*(whale?.14:.2),size*(whale?.35:.53),8),blue,-size*.75,size*.75,0,g,{roughness:.86});
+      dorsal.rotation.z=-.27;
+      // Blowhole ridge and jaw seam are visible even from a mobile camera.
+      if(whale){
+        const blow=add(new T.SphereGeometry(size*.12,12,8),0x354d5d,size*(sperm?2.72:1.91),size*(sperm?1.00:.62),0,g,{roughness:.93});
+        blow.scale.set(.7,.19,1.15);
+        for(const side of [-1,1]){
+          const line=add(new T.CylinderGeometry(size*.009,size*.009,size*1.35,6),0x3c5665,
+                  size*1.46,-size*.40,side*size*.50,g,{roughness:.95});
+          line.rotation.z=Math.PI/2;
+        }
+      }
+   }else if(kind==='squid'){
+      const mantle=add(new T.ConeGeometry(size*.38,size*1.65,18),0xc586a8,-size*.34,0,0,g,{roughness:.72});mantle.rotation.z=-Math.PI/2;
+      const crown=add(new T.SphereGeometry(size*.40,20,14),0xe8adc7,size*.48,0,0,g);crown.scale.set(.95,.62,.75);
+      for(const side of [-1,1]){
+        const wing=add(new T.ConeGeometry(size*.35,size*.72,3),0xeab1cb,-size*.90,0,side*size*.29,g);wing.rotation.z=-Math.PI/2;parts.fins.push(wing);
+        addEye(size*.6,size*.13,side*size*.23,size*.075);
+      }
+      for(let j=0;j<10;j++){
+        const side=(j-4.5)/4.5;
+        const arm=add(new T.CylinderGeometry(size*.018,size*.045,size*(j<2?2.1:1.25),7),0xd495b5,size*1.05,-size*(j<2?.53:.31),side*size*.16,g);arm.rotation.z=-Math.PI/2+side*.2;parts.arms.push(arm);
+      }
+   }else if(kind==='shrimp'){
+      for(let j=0;j<7;j++){
+        const a=j/6;const seg=add(new T.SphereGeometry(size*(.20-a*.055),14,10),j%2?0xf5a68d:0xffc19f,size*(.55-j*.20),-size*(.02+j*j*.012),0,g);seg.scale.set(1.0,.65,.85);
+      }
+      for(const side of [-1,1]){
+        for(let j=0;j<5;j++){const leg=add(new T.CylinderGeometry(size*.012,size*.021,size*.37,6),0xefad97,size*(.28-j*.18),-size*.24,side*size*.11,g);leg.rotation.z=side*.33;parts.arms.push(leg);}
+        const antenna=add(new T.CylinderGeometry(size*.007,size*.014,size*1.9,6),0xffd1b9,size*1.24,size*.27,side*size*.2,g);antenna.rotation.z=-1.05;parts.arms.push(antenna);
+        addEye(size*.63,size*.14,side*size*.12,size*.064);
+      }
+      const fan=add(new T.ConeGeometry(size*.22,size*.49,5),0xee967e,-size*.89,-size*.42,0,g);fan.rotation.z=Math.PI/2;parts.tail=[fan];
+    }else if(kind==='ray'){
+       const top=0x739bab, belly=0xb8d3d9;
+       // Broad manta disc in X/Z plane, facing +X, wingtips to +/-Z.
+       const disc=add(new T.SphereGeometry(size*.82,24,14),top,0,0,0,g,{roughness:.78});
+       disc.scale.set(1.45,.20,1.25);
+       const makeWing=(side)=>{
+         const pts=[[-.16,0],[.48,.45],[-.06,1.22],[-.80,1.97],[-1.15,2.55],[-1.09,1.55],[-.83,.60]];
+         const verts=[],indices=[];
+         for(const [x,z] of pts) verts.push(x*size,0,z*size*side);
+         for(let j=1;j<pts.length-1;j++)indices.push(0,j,j+1);
+         const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();
+         const pivot=new T.Group();pivot.position.set(-size*.08,0,side*size*.48);g.add(pivot);
+         const wing=new T.Mesh(geo,mat(top,{roughness:.8,side:T.DoubleSide}));
+         wing.position.z=-side*size*.48;pivot.add(wing);
+         return pivot;
+       };
+       parts.wings=[makeWing(1),makeWing(-1)];
+       const snout=add(new T.SphereGeometry(size*.32,16,12),top,size*.93,0,0,g,{roughness:.8});snout.scale.set(.85,.30,1.24);
+       const bellyPatch=add(new T.SphereGeometry(size*.55,18,12),belly,-size*.04,-size*.14,0,g,{roughness:.85});bellyPatch.scale.set(1.26,.12,1.30);
+       const tail=add(new T.CylinderGeometry(size*.012,size*.042,size*3.35,8),0x415e70,-size*2.05,-size*.05,0,g,{roughness:.82});tail.rotation.z=Math.PI/2;parts.tail=[tail];
+       for(const side of [-1,1]){
+         const horn=add(new T.ConeGeometry(size*.085,size*.46,12),top,size*1.15,size*.01,side*size*.46,g);horn.rotation.z=-Math.PI/2;
+         addEye(size*.70,size*.085,side*size*.48,size*.075);
+       }
    }else if(kind==='turtle'){
       const shell=add(new T.SphereGeometry(size*.86,13,10),0x55784d,0,0,0,g,{roughness:.9});shell.scale.set(1.55,.56,1.16);parts.shell=shell;
       const top=add(new T.SphereGeometry(size*.76,12,10),0x88a66a,size*.06,size*.06,0,g,{roughness:.86});top.scale.set(1.08,.28,.88);
@@ -1088,7 +1421,7 @@ spawnScene(); requestAnimationFrame(render);
       const longish=['shark','sardine','wrasse'].includes(kind);
       const deepBody=['rockfish','seabream','butterfly','angelfish','damselfish'].includes(kind);
       const shark=kind==='shark';
-      const body=add(new T.SphereGeometry(size*.56,16,12),mid,0,0,0,g,{roughness:.8});body.scale.set(shark?2.55:(longish?2.2:(deepBody?1.7:1.95)),deepBody?1.1:(shark?.7:.86),shark?.72:(deepBody?1.18:.88));
+      const body=add(new T.SphereGeometry(size*.56,16,12),mid,0,0,0,g,{roughness:.8});body.scale.set(shark?2.55:(longish?2.2:(deepBody?1.7:1.95)),deepBody?1.1:(shark?.7:.86),shark?.72:(deepBody?1.18:.56));
       const head=add(new T.SphereGeometry(size*.34,12,10),light,size*(shark?1.25:1.0),0,0,g,{roughness:.72});head.scale.set(shark?1.45:1.12,shark?.74:1,shark?.7:.95);
       const tailPivot=new T.Group();tailPivot.position.set(-size*(shark?1.55:1.35),0,0);g.add(tailPivot);
       const tailL=add(new T.BoxGeometry(size*.95,size*.08,size*.52),dark,-size*.22,size*.18,0,tailPivot,{roughness:.86});tailL.rotation.z=.72;
@@ -1126,6 +1459,7 @@ spawnScene(); requestAnimationFrame(render);
      depthBob:.45+Math.abs(y%9)/9*.85
    };
    fish.push(g);
+   return g;
  }
  function landmarks(random){
   // Distinctive stylized landmarks. They are environment art, not georeferenced navigational models.
@@ -1155,6 +1489,7 @@ spawnScene(); requestAnimationFrame(render);
    case 10: for(let i=0;i<3;i++)island(-105+i*103,-151-i*11,32+i*4,15+i*5,0x589c85);break; // Kerama
    case 11: for(let i=0;i<5;i++){let x=-150+i*75;cone(x,33,-148-(i%2)*37,24+(i%3)*9,58+(i%3)*15,0x6b7660,7);boulder(x,7,-139-(i%2)*37,28,10,24,0x465964)}break; // Raja Ampat karsts
    case 12: for(let i=0;i<7;i++){let x=-160+i*53;cone(x,17,-170-(i%2)*14,30,39+(i%4)*15,i%2?0xc79c7f:0x9f7964,5)}break; // Dahab Sinai
+   case 13: island(-122,-165,34,18,0x629c7c);island(-32,-142,64,33,0x588770);island(92,-173,26,14,0x659c7a);break; // Mauritius
   }
  }
 
@@ -1162,7 +1497,7 @@ spawnScene(); requestAnimationFrame(render);
  function decorateDiveSite(random){
   // Naturalistic regional geology: ledges and large rock masses, not floating clusters.
   const jeju=idx===3||idx===4, korean=idx>=3&&idx<=8;
-  const reef=[0,1,9,10,11,12].includes(idx), basalt=korean;
+  const reef=[0,1,9,10,11,12,13].includes(idx), basalt=korean;
   const stone=basalt?0x354c4e:reef?0x62716b:0x626d68;
   const createRock=(x,y,z,w,h,d)=>{const o=mesh(new T.IcosahedronGeometry(1,2),stone,x,y,z);o.scale.set(w,h,d);return o};
   // A single monumental volcanic slope, with a shelf and a naturally descending ledge.
@@ -1257,7 +1592,7 @@ spawnScene(); requestAnimationFrame(render);
    // Natural fallen rocks at the threshold.
    for(let k=0;k<7;k++)block(4+k%3*2,2+k%2*2,5,(k-3)*12,-64,-5+(k%2)*9,rockTone);
  }
- function buildBiome(){if(!scene)return;clearTerrain();lastSpot=idx;const type=spots[idx].type,random=rng(idx+41),sand=['lagoon','coral'].includes(type),lava=['volcanic','rock','arch','cliff'].includes(type),reef=sand||type==='cliff'||type==='coral';
+ function buildBiome(){if(!scene)return;window.blueShoals3D=[];clearTerrain();lastSpot=idx;const type=spots[idx].type,random=rng(idx+41),sand=['lagoon','coral'].includes(type),lava=['volcanic','rock','arch','cliff'].includes(type),reef=sand||type==='cliff'||type==='coral';
  const bottom=mesh(new T.PlaneGeometry(1500,1500,34,34),sand?0xc9c2a0:lava?0x252f35:0x54747e,0,-9200,0);bottom.rotation.x=-Math.PI/2;
  // Visual bathymetry is exaggerated ~10x for immersive game art; HUD depths retain the gameplay measurement.
  // Stepped shelves and abrupt drop-offs create foreground, midground, and distant abyss.
@@ -1293,11 +1628,11 @@ spawnScene(); requestAnimationFrame(render);
  [0xe988b0,0xead46a,0x5bd4ba,0x71aafa,0xe3a26b], // Raja Ampat
  [0xf09c9d,0xf7c663,0x6ec1df,0x9d72ca] // Dahab
  ];
- const amounts=[98,80,64,64,54,62,56,53,57,110,86,115,90];
+ const amounts=[116,98,78,78,70,76,70,68,73,132,103,137,105,118];
  const fishColors=palettes[idx]||palettes[0];
  for(let i=0;i<amounts[idx];i++){
-  const x=(random()-.5)*155,z=(random()-.5)*155,y=-12-random()*Math.min(8500,280+(i%8)*950);
-  const n=random();const tropical=[0,1,2,9,10,11,12].includes(idx);
+  const range=i<amounts[idx]*.55?155:460;const x=(random()-.5)*range,z=(random()-.5)*range,y=-12-random()*Math.min(8500,280+(i%8)*950);
+  const n=random();const tropical=[0,1,2,9,10,11,12,13].includes(idx);
   const kinds=idx===9?['sardine','sardine','sardine','sardine','damselfish','surgeon','wrasse','turtle']:
    idx===3?['seabream','damselfish','wrasse','rockfish','octopus','ray']:
    idx===4?['seabream','wrasse','rockfish','damselfish','octopus','ray']:
@@ -1306,8 +1641,45 @@ spawnScene(); requestAnimationFrame(render);
    tropical?['butterfly','angelfish','parrot','surgeon','damselfish','wrasse','ray','turtle','shark']:
    ['seabream','sardine','rockfish','wrasse','damselfish','octopus','ray'];
   const kind=kinds[Math.floor(n*kinds.length)];
-  fishModel(x,y,z,.85+random()*.75,fishColors[Math.floor(random()*fishColors.length)],kind);
+   fishModel(x,y,z,.85+random()*.75,fishColors[Math.floor(random()*fishColors.length)],kind);
  }
+  // Large traveling bait-balls; some schools fill a substantial part of the view.
+  const schoolGeometry=new T.ConeGeometry(.6,2.25,3);
+  schoolGeometry.rotateZ(-Math.PI/2);
+  const schools=[];
+  for(let k=0;k<3;k++){
+    const huge=k===0, count=huge?360:110;
+    const school=new T.Group();school.position.set((k-1)*35,-17-k*15,-48-k*38);
+    school.userData.largeSchool=true;school.userData.baseX=school.position.x;
+    school.userData.phase=k*1.9;terrain.add(school);
+    const meshFish=new T.InstancedMesh(schoolGeometry,new T.MeshStandardMaterial({color:k===0?0xc4e6ef:0x91c9d8,roughness:.74,metalness:.1,side:T.DoubleSide}),count);
+    const dummy=new T.Object3D();
+    for(let i=0;i<count;i++){
+      const a=i*2.3999632297,r=Math.sqrt((i+.5)/count),wiggle=Math.sin(a*3+k);
+      dummy.position.set(Math.cos(a)*r*(huge?24:9),Math.sin(a)*r*(huge?13:5),Math.sin(i*.75)*r*(huge?11:4));
+      dummy.rotation.set(.10*Math.sin(i),.23*Math.cos(i),.2*Math.sin(a));
+      dummy.scale.setScalar(huge?.95:.72);dummy.updateMatrix();meshFish.setMatrixAt(i,dummy.matrix);
+    }
+    meshFish.instanceMatrix.needsUpdate=true;school.add(meshFish);schools.push(school);
+  }
+  window.blueShoals3D=schools;
+ if(idx===13){
+   // Madeira/Mauritius offshore: visual diversity across scales, near enough to be encountered.
+   // A clearly visible pair of giants near the starting swim route, with distant companions.
+   const giants=[
+     ['humpback',-145,-45,-210,2.0],
+     ['dolphin',-18,-9,-28,3.0],
+     ['dolphin',19,-14,-35,3.1]
+   ];
+   for(const [kind,x,y,z,size] of giants){
+     const animal=fishModel(x,y,z,size,0x819eb0,kind);
+     if(animal){animal.userData.mauritiusGiant=(kind!=='dolphin');if(kind!=='dolphin')animal.scale.setScalar(100);}
+   }
+ }
+ if(idx===3||idx===4){
+   for(const [x,y,z] of [[-24,-8,-36],[28,-13,-55],[52,-17,-83]])fishModel(x,y,z,2.3,0x89c4d2,'dolphin');
+ }
+ for(const [kind,x,y,z] of [['squid',-19,-11,-34],['shrimp',24,-16,-45]])fishModel(x,y,z,1.6,0xedb0a2,kind);
  decorateDiveSite(random);
  add3DUnderwaterCave();
  // Islands, shoreline, and birds are above water only
@@ -1333,7 +1705,7 @@ spawnScene(); requestAnimationFrame(render);
  terrain.children.forEach(o=>{if(o.userData&&o.userData.seed!==undefined)return;});
  const deep=Math.min(1,m/95),fogColor=new T.Color(0x4abed0).lerp(new T.Color(0x07354a),Math.pow(deep,1.55));
  scene.background=dive?fogColor:new T.Color(0x9cdef2);const sunShafts=scene.getObjectByName('sunShafts');if(sunShafts){sunShafts.visible=dive&&m<18;sunShafts.children.forEach((beam,i)=>beam.material.opacity=.045*Math.max(0,1-m/19)*(0.85+Math.sin(tick*.65+i)*.15));}
- scene.fog=dive?new T.FogExp2(fogColor,.00028+deep*.0008):new T.Fog(0x9cdef2,90,400);
+ scene.fog=dive?new T.FogExp2(fogColor,.00020+deep*.00043):new T.Fog(0x9cdef2,90,400);
  scene.children.forEach(light=>{if(light.isDirectionalLight)light.intensity=dive?3.2*(1-deep*.69):2.3;if(light.isHemisphereLight)light.intensity=dive?3.1*(1-deep*.5):2.1;});
  const surfLand=terrain&&terrain.getObjectByName('surfaceLandmarks'); if(surfLand) surfLand.visible=!dive;
  fish.forEach((f,i)=>{
@@ -1341,9 +1713,11 @@ spawnScene(); requestAnimationFrame(render);
    if(!dive)return;
    let ux=f.userData.x,uy=f.userData.y,uz=f.userData.z;
    const camY=camera.position.y,camX=camera.position.x,camZ=camera.position.z;
-   if(Math.abs(uy-camY)>110){uy=camY+(i%2?1:-1)*(18+(i*23%58));f.userData.y=uy;}
-   if(Math.abs(ux-camX)>110){ux=camX+(i%2?1:-1)*(20+(i*17%60));f.userData.x=ux;}
-   if(Math.abs(uz-camZ)>105){uz=camZ+(i%3===0?1:-1)*(24+(i*19%68));f.userData.z=uz;}
+   // v48: preserve near swimmers and spread farther animals throughout the view.
+   // Recycle only far outside the view to avoid obvious disappear/reappear at ~110 units.
+   if(!f.userData.mauritiusGiant && Math.abs(uy-camY)>310){uy=camY+(i%2?1:-1)*(95+(i*23%170));f.userData.y=uy;}
+   if(!f.userData.mauritiusGiant && Math.abs(ux-camX)>330){ux=camX+(i%2?1:-1)*(105+(i*17%190));f.userData.x=ux;}
+   if(!f.userData.mauritiusGiant && Math.abs(uz-camZ)>350){uz=camZ+(i%3===0?1:-1)*(130+(i*19%190));f.userData.z=uz;}
    const phase=f.userData.phase+i*.13;
    const swim=tick*f.userData.swimSpeed+phase;
    const orbit=f.userData.orbit;
@@ -1373,10 +1747,11 @@ spawnScene(); requestAnimationFrame(render);
        fin.rotation.z=fin.userData.baseZ+Math.sin(swim*3.8+j)*.04;
      });
    }
-   if(parts.wings.length){parts.wings.forEach((wing,j)=>{wing.userData.baseZ ??= wing.rotation.z||0;wing.rotation.z=wing.userData.baseZ+Math.sin(swim*3.6+j)*.16;});}
+   if(parts.wings.length){parts.wings.forEach((wing,j)=>{wing.userData.baseZ ??= wing.rotation.z||0;wing.rotation.x= (j===0?1:-1)*Math.sin(swim*2.8)*.27;});}
    if(parts.arms.length){parts.arms.forEach((arm,j)=>{arm.userData.baseX ??= arm.rotation.x||0;arm.userData.baseZ ??= arm.rotation.z||0;arm.rotation.x=arm.userData.baseX+Math.sin(swim*4+j)*.16;arm.rotation.z=arm.userData.baseZ+Math.cos(swim*4.5+j)*.12;});}
    if(parts.shell)parts.shell.rotation.y=Math.sin(swim*1.1)*.05;
  });
+  (window.blueShoals3D||[]).forEach((school,i)=>{school.position.x=school.userData.baseX+Math.sin(tick*.11+school.userData.phase)*(i===0?45:22);school.position.y=-17-i*15+Math.sin(tick*.4+i)*2;});
  birds.forEach((b,i)=>{b.visible=!dive;b.position.x+=dt*(i%2?1.4:-1.2);if(Math.abs(b.position.x)>100)b.position.x=-Math.sign(b.position.x)*95;b.position.y+=Math.sin(tick*1.2+i)*dt*.45;});
  flying.forEach((f,i)=>{f.visible=!dive;const cycle=(tick*.55+i*.17)%1;f.visible=!dive&&cycle<.62;f.position.y=.35+Math.sin(Math.min(1,cycle/.62)*Math.PI)*5;f.position.x+=dt*7.4;f.rotation.z=Math.sin(cycle*Math.PI*2)*.20;if(f.position.x>85)f.position.x=-85;});
  sea.material.opacity=dive?.025:.86;sea.position.y=Math.sin(tick*.9)*.13;
@@ -1789,6 +2164,15 @@ const list=document.createElement('div');list.id='blRemoteList';panel.append(lis
 const label=document.createElement('label');label.id='blShare';label.innerHTML='<input type="checkbox"> 스태틱(STA) 기록을 다른 다이버에게 공개';panel.append(label);
 const consent=label.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
 const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
+
+const chatBox=document.createElement('section');chatBox.id='blueChat';chatBox.innerHTML=`<div class="blChatHead"><b>💬 다이버 실시간 채팅</b><button type="button" id="blChatToggle">접기</button></div><div class="blChatTarget"><label for="blChatRecipient">대화 상대</label><select id="blChatRecipient"><option value="">🌍 같은 바다 전체</option></select></div><div id="blChatMessages" role="log" aria-live="polite"></div><form id="blChatForm"><input id="blChatInput" maxlength="220" autocomplete="off" placeholder="메시지를 입력하세요" aria-label="채팅 메시지"><button type="submit">전송</button></form><small>같은 바다 전체 채팅 또는 현재 접속한 다이버에게 1:1 메시지 · 현재 접속 중일 때만 전달</small>`;
+document.body.append(chatBox);if(matchMedia("(max-width:760px)").matches){chatBox.classList.add("collapsed");chatBox.querySelector("#blChatToggle").textContent="펼치기"}
+const chatList=chatBox.querySelector('#blChatMessages'),chatTo=chatBox.querySelector('#blChatRecipient'),chatInput=chatBox.querySelector('#blChatInput');
+chatBox.querySelector('#blChatToggle').onclick=()=>{chatBox.classList.toggle('collapsed');chatBox.querySelector('#blChatToggle').textContent=chatBox.classList.contains('collapsed')?'펼치기':'접기'};
+function chatLine(m){const div=document.createElement('div');div.className='blMessage';const b=document.createElement('b');b.textContent=m.fromNick||'안내';const t=document.createElement('span');t.textContent=' '+(m.private?'🔒 1:1 ':'')+(m.text||'');div.append(b,t);chatList.append(div);while(chatList.childElementCount>65)chatList.firstChild.remove();chatList.scrollTop=chatList.scrollHeight}
+function chatRoster(){const current=chatTo.value;chatTo.replaceChildren();const all=document.createElement('option');all.value='';all.textContent='🌍 같은 바다 전체';chatTo.append(all);for(const p of players){if(p.id===me)continue;const op=document.createElement('option');op.value=p.id;op.textContent='🔒 '+p.nick+(Number(p.spot)===myPlace()?' · 같은 바다':' · 다른 바다');chatTo.append(op)}chatTo.value=[...chatTo.options].some(o=>o.value===current)?current:''}
+chatBox.querySelector('#blChatForm').onsubmit=e=>{e.preventDefault();const value=chatInput.value.trim();if(!value)return;if(!me){chatLine({fromNick:'안내',text:'서버 연결 후 채팅할 수 있어요.'});return}send({type:'chat',text:value,to:chatTo.value||null});chatInput.value=''};
+
 const gear=()=>{try{return JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}').equipped||{}}catch{return {}}};
 const nick=()=>String(document.getElementById('diverNickname')?.value||'바다 탐험가').trim().slice(0,16)||'바다 탐험가';
 const send=o=>{if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o))};
@@ -1797,7 +2181,7 @@ const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('p
 const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
 function statLog(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const x=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(x))return x}}catch{}return []}
 function syncSTA(){send({type:'sta',share:consent.checked,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
-function inspect(id){const p=players.find(q=>q.id===id);modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';send({type:'inspect',id})}
+function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
  if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
@@ -1827,7 +2211,9 @@ function start(){clearTimeout(reconnect);const proto=location.protocol==='https:
  ws.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:0,equipped:gear(),token:localStorage.getItem(key)||''})};
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
  if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();updatePanel()}
- if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel()}
+ if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel();chatRoster()}
+  if(m.type==='chat'){chatLine(m)}
+  if(m.type==='chat_error'){chatLine({fromNick:'안내',text:m.message||'메시지를 보낼 수 없어요.'})}
  if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}}
  };
  ws.onclose=()=>{me=null;players=[];updatePanel();reconnect=setTimeout(start,delay);delay=Math.min(30000,delay*2)};ws.onerror=()=>{try{ws.close()}catch{}};
@@ -1896,6 +2282,26 @@ pickup.addEventListener('click',e=>{if(e.detail!==0){e.preventDefault();e.stopIm
 // The old joystick stop handler remains intact; guard a new finger from hijacking an active joystick.
 joy.addEventListener('pointerdown',e=>{if(joy.hasPointerCapture?.(e.pointerId))return;},false);
 window.addEventListener('blur',()=>stop());
+})();
+</script>
+
+<!-- BLUE LOG v48: hold-to-swim controls; prevent mobile text selection only on navigation keys. -->
+<style>
+#verticalCtrl, #verticalCtrl button, [data-move="forward"], [data-move="back"] {
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;touch-action:none!important;-webkit-user-drag:none!important;
+}
+</style>
+<script>
+(()=>{
+  const keys=[document.getElementById('joyAscend'),document.getElementById('joyDescend'),...document.querySelectorAll('[data-move="forward"],[data-move="back"]')].filter(Boolean);
+  for(const el of keys){
+    el.addEventListener('contextmenu',ev=>ev.preventDefault());
+    el.addEventListener('selectstart',ev=>ev.preventDefault());
+    el.addEventListener('dragstart',ev=>ev.preventDefault());
+    el.addEventListener('touchstart',ev=>ev.preventDefault(),{passive:false});
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(typeof controls!=='undefined'){controls.forward=false;controls.back=false;}}});
 })();
 </script>
 </body>
