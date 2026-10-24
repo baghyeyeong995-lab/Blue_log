@@ -292,6 +292,12 @@ try{photos=JSON.parse(localStorage.getItem('blue_photos')||'[]');records=JSON.pa
 
 // Local cosmetic inventory: non-redeemable virtual currency only.
 const GEAR_CATALOG=[
+{id:'hair_men_black',name:'남성 숏컷 · 블랙',price:80,cat:'hair',symbol:'🖤',color:'#222329'},
+{id:'hair_men_brown',name:'남성 숏컷 · 브라운',price:100,cat:'hair',symbol:'🤎',color:'#885030'},
+{id:'hair_men_blond',name:'남성 숏컷 · 금발',price:120,cat:'hair',symbol:'💛',color:'#e6b64c'},
+{id:'hair_men_ash',name:'남성 숏컷 · 애쉬',price:140,cat:'hair',symbol:'🩶',color:'#a2a6b5'},
+{id:'hair_men_blue',name:'남성 숏컷 · 블루',price:150,cat:'hair',symbol:'💙',color:'#397ed3'},
+{id:'hair_men_red',name:'남성 숏컷 · 레드',price:150,cat:'hair',symbol:'❤️',color:'#bf4255'},
 {id:'fins_clear',name:'크리스탈 롱핀 · 투명',price:400,cat:'fins',symbol:'🪽',color:'#e6fdff'},
 {id:'fins_pink',name:'롱핀 · 코랄핑크',price:280,cat:'fins',symbol:'🩷',color:'#ff92bf'},
 {id:'fins_blue',name:'롱핀 · 오션블루',price:280,cat:'fins',symbol:'💙',color:'#53b9ed'},
@@ -345,9 +351,10 @@ const GEAR_CATALOG=[
 let gearState={money:0,owned:[],equipped:{}};
 try{const saved=JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'null');if(saved&&typeof saved==='object'){gearState={...gearState,...saved};gearState.owned=Array.isArray(saved.owned)?saved.owned:[];gearState.equipped=saved.equipped||{};}}catch(e){}
 function saveGear(){try{localStorage.setItem('blue_cosmetics_v11',JSON.stringify(gearState))}catch(e){}}
+try{if(!localStorage.getItem('blue_coin_auto_credit_v8')){gearState.money=(Number(gearState.money)||0)+(Math.max(0,Number(inventory.coin)||0)*12);saveGear();localStorage.setItem('blue_coin_auto_credit_v8','yes')}}catch(e){}
 function renderShop(){document.getElementById('wallet').textContent=(gearState.money||0).toLocaleString('ko-KR')+'원';let selected=Object.values(gearState.equipped).map(id=>GEAR_CATALOG.find(i=>i.id===id)?.name).filter(Boolean);document.getElementById('equipPreview').textContent='장착 장비: '+(selected.join(' · ')||'기본 장비');document.getElementById('shopGrid').innerHTML='';GEAR_CATALOG.forEach(g=>{const btn=document.createElement('button');const own=gearState.owned.includes(g.id),equipped=gearState.equipped[g.cat]===g.id;btn.textContent=g.symbol+' '+g.name+(g.cat==='pet'?' · 자동 수집 '+g.range+'범위':'')+' · '+(equipped?'장착 중':own?'장착하기':g.price+'원');btn.onclick=()=>{if(!own){if(gearState.money<g.price){notify('게임머니가 부족해요. 수집품을 먼저 판매해 보세요.');return;}gearState.money-=g.price;gearState.owned.push(g.id);}gearState.equipped[g.cat]=g.id;saveGear();renderShop();drawCharacterPreview();notify('장비를 장착했어요: '+g.name);};document.getElementById('shopGrid').appendChild(btn)})}
 
-function drawCharacterPreview(){const c=document.getElementById('characterPreview');if(!c)return;const g=c.getContext('2d'),E=gearState.equipped;g.clearRect(0,0,230,230);g.save();g.translate(115,117);const item=k=>GEAR_CATALOG.find(v=>v.id===E[k]);const outfit=item('outfit')?.color||(E.outfit==='suit_mint'?'#6de5d0':E.outfit==='swim_pink'?'#f891bb':E.outfit==='swim_lilac'?'#c0a0ff':'#172235');const fin=item('fins')?.color||'#e5f7ff';const hair=E.hair||'hair_wavy';g.strokeStyle='#3f2c30';g.lineWidth=7;g.lineCap='round';const len=hair==='hair_short'?15:hair==='hair_bob'?28:hair==='hair_ponytail'?42:57;for(let i=0;i<11;i++){let x=(i-5)*3;g.beginPath();g.moveTo(x,-66);g.quadraticCurveTo(x+(i%2?7:-7),-55,x+(i%3-1)*6,-73+len);g.stroke()}g.fillStyle='#eeb590';g.beginPath();g.ellipse(0,-53,17,22,0,0,7);g.fill();g.fillStyle=outfit;g.beginPath();g.roundRect(-25,-26,50,69,15);g.fill();if(item('outfit')?.style==='shorts'){g.fillStyle='#eeb590';g.fillRect(-23,-24,46,40);g.fillStyle=outfit;g.fillRect(-24,15,48,27);} g.strokeStyle=outfit;g.lineWidth=14;g.beginPath();g.moveTo(-22,-10);g.lineTo(-40,31);g.moveTo(22,-10);g.lineTo(40,31);g.stroke();g.strokeStyle='#eeb590';g.lineWidth=10;g.beginPath();g.moveTo(-40,31);g.lineTo(-47,45);g.moveTo(40,31);g.lineTo(47,45);g.stroke();g.strokeStyle='#eeb590';g.lineWidth=14;g.beginPath();g.moveTo(-13,41);g.lineTo(-13,93);g.moveTo(13,41);g.lineTo(13,93);g.stroke();if(item('socks')){g.strokeStyle=item('socks').color;g.lineWidth=16;g.beginPath();g.moveTo(-13,76);g.lineTo(-13,96);g.moveTo(13,76);g.lineTo(13,96);g.stroke()}g.fillStyle=fin;for(const x of [-13,13]){g.beginPath();g.moveTo(x-9,85);g.lineTo(x+3,85);g.lineTo(x+22,112);g.lineTo(x-13,112);g.closePath();g.fill()}g.fillStyle='#302328';g.beginPath();g.moveTo(-17,-55);g.bezierCurveTo(-19,-80,-7,-79,0,-77);g.bezierCurveTo(12,-81,20,-72,17,-54);g.quadraticCurveTo(10,-63,0,-63);g.quadraticCurveTo(-9,-65,-17,-55);g.closePath();g.fill();g.strokeStyle='#68443d';g.lineWidth=2;g.beginPath();g.moveTo(-11,-65);g.quadraticCurveTo(-3,-78,10,-66);g.stroke();g.fillStyle=item('mask')?.color||'#fff';g.beginPath();g.roundRect(-20,-59,40,15,7);g.fill();g.fillStyle='#6ec6e4';g.fillRect(-15,-55,30,7);g.strokeStyle='#fff';g.lineWidth=5;g.beginPath();g.moveTo(18,-49);g.lineTo(29,-65);g.lineTo(29,-85);g.stroke();if(item('headwear')){const h=item('headwear');g.fillStyle=h.color;g.beginPath();g.ellipse(0,-75,23,h.id.startsWith('cap')?11:8,0,Math.PI,0);g.lineTo(-22,-68);g.lineTo(22,-68);g.fill();if(h.id.startsWith('cap'))g.fillRect(7,-72,30,5)}if(item('buoy')){g.strokeStyle=item('buoy').color;g.lineWidth=12;g.beginPath();g.ellipse(69,24,24,14,0,0,7);g.stroke();g.strokeStyle='#ffffff99';g.lineWidth=2;g.beginPath();g.moveTo(47,27);g.lineTo(42,2);g.stroke()}if(item('pet')){g.font='34px system-ui';g.textAlign='center';g.fillText(item('pet').symbol,68,-20);g.font='bold 10px system-ui';g.fillStyle='#16506b';g.fillText('AUTO',68,0);}g.restore()}
+function drawCharacterPreview(){const c=document.getElementById('characterPreview');if(!c)return;const g=c.getContext('2d'),E=gearState.equipped;g.clearRect(0,0,230,230);g.save();g.translate(115,117);const item=k=>GEAR_CATALOG.find(v=>v.id===E[k]);const outfit=item('outfit')?.color||(E.outfit==='suit_mint'?'#6de5d0':E.outfit==='swim_pink'?'#f891bb':E.outfit==='swim_lilac'?'#c0a0ff':'#172235');const fin=item('fins')?.color||'#e5f7ff';const hair=E.hair||'hair_wavy';g.strokeStyle='#3f2c30';g.lineWidth=7;g.lineCap='round';const len=(hair==='hair_short'||hair.startsWith('hair_men_'))?7:hair==='hair_bob'?28:hair==='hair_ponytail'?42:57;for(let i=0;i<((hair==='hair_short'||hair.startsWith('hair_men_'))?0:11);i++){let x=(i-5)*3;g.beginPath();g.moveTo(x,-66);g.quadraticCurveTo(x+(i%2?7:-7),-55,x+(i%3-1)*6,-73+len);g.stroke()}g.fillStyle='#eeb590';g.beginPath();g.ellipse(0,-53,17,22,0,0,7);g.fill();g.fillStyle=outfit;g.beginPath();g.roundRect(-25,-26,50,69,15);g.fill();if(item('outfit')?.style==='shorts'){g.fillStyle='#eeb590';g.fillRect(-23,-24,46,40);g.fillStyle=outfit;g.fillRect(-24,15,48,27);} g.strokeStyle=outfit;g.lineWidth=14;g.beginPath();g.moveTo(-22,-10);g.lineTo(-40,31);g.moveTo(22,-10);g.lineTo(40,31);g.stroke();g.strokeStyle='#eeb590';g.lineWidth=10;g.beginPath();g.moveTo(-40,31);g.lineTo(-47,45);g.moveTo(40,31);g.lineTo(47,45);g.stroke();g.strokeStyle='#eeb590';g.lineWidth=14;g.beginPath();g.moveTo(-13,41);g.lineTo(-13,93);g.moveTo(13,41);g.lineTo(13,93);g.stroke();if(item('socks')){g.strokeStyle=item('socks').color;g.lineWidth=16;g.beginPath();g.moveTo(-13,76);g.lineTo(-13,96);g.moveTo(13,76);g.lineTo(13,96);g.stroke()}g.fillStyle=fin;for(const x of [-13,13]){g.beginPath();g.moveTo(x-9,85);g.lineTo(x+3,85);g.lineTo(x+22,112);g.lineTo(x-13,112);g.closePath();g.fill()}g.fillStyle=item('hair')?.color||'#302328';g.beginPath();g.moveTo(-17,-55);g.bezierCurveTo(-19,-80,-7,-79,0,-77);g.bezierCurveTo(12,-81,20,-72,17,-54);g.quadraticCurveTo(10,-63,0,-63);g.quadraticCurveTo(-9,-65,-17,-55);g.closePath();g.fill();g.strokeStyle='#68443d';g.lineWidth=2;g.beginPath();g.moveTo(-11,-65);g.quadraticCurveTo(-3,-78,10,-66);g.stroke();g.fillStyle=item('mask')?.color||'#fff';g.beginPath();g.roundRect(-20,-59,40,15,7);g.fill();g.fillStyle='#6ec6e4';g.fillRect(-15,-55,30,7);g.strokeStyle='#fff';g.lineWidth=5;g.beginPath();g.moveTo(18,-49);g.lineTo(29,-65);g.lineTo(29,-85);g.stroke();if(item('headwear')){const h=item('headwear');g.fillStyle=h.color;g.beginPath();g.ellipse(0,-75,23,h.id.startsWith('cap')?11:8,0,Math.PI,0);g.lineTo(-22,-68);g.lineTo(22,-68);g.fill();if(h.id.startsWith('cap'))g.fillRect(7,-72,30,5)}if(item('buoy')){g.strokeStyle=item('buoy').color;g.lineWidth=12;g.beginPath();g.ellipse(69,24,24,14,0,0,7);g.stroke();g.strokeStyle='#ffffff99';g.lineWidth=2;g.beginPath();g.moveTo(47,27);g.lineTo(42,2);g.stroke()}if(item('pet')){g.font='34px system-ui';g.textAlign='center';g.fillText(item('pet').symbol,68,-20);g.font='bold 10px system-ui';g.fillStyle='#16506b';g.fillText('AUTO',68,0);}g.restore()}
 
 function sellGameItem(kind,price,label,one=false){const have=Math.max(0,Math.floor(Number(inventory[kind])||0));if(!have){notify(label+' 수집품이 없어요.');return;}const qty=one?1:have;inventory[kind]=have-qty;gearState.money=(Number(gearState.money)||0)+qty*price;try{localStorage.setItem('blue_inventory',JSON.stringify(inventory))}catch(e){}saveGear();renderShop();updateHUD();notify(label+' '+qty+'개를 판매하고 '+(qty*price).toLocaleString('ko-KR')+'원을 얻었어요.');}
 document.getElementById('sellAbalone').onclick=()=>sellGameItem('abalone',60,'전복');
@@ -356,7 +363,7 @@ document.getElementById('sellHorn').onclick=()=>sellGameItem('hornShell',40,'뿔
 document.getElementById('sellHornOne').onclick=()=>sellGameItem('hornShell',40,'뿔소라',true);
 document.getElementById('sellUrchin').onclick=()=>sellGameItem('urchin',65,'성게');
 document.getElementById('sellUrchinOne').onclick=()=>sellGameItem('urchin',65,'성게',true);
-document.getElementById('sellCoins').onclick=()=>sellGameItem('coin',12,'반짝 코인');
+document.getElementById('sellCoins').onclick=()=>notify('코인은 주울 때 자동으로 게임머니에 반영돼요.');document.getElementById('sellCoins').hidden=true;document.getElementById('sellCoins').disabled=true;
 renderShop();drawCharacterPreview();
 
 const fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
@@ -366,7 +373,7 @@ function rand(a,b){return a+Math.random()*(b-a)}
 function worldToScreen(x,y,z=diver.z){const scale=clamp(1+(z-diver.z)*0.72,0.56,1.8);return {x:(x-cam.x)*scale + W*(1-scale)/2,y:(y-cam.y)*scale + H*(1-scale)/2,scale}}
 function depthMeters(){return Math.max(0,(diver.y-surfaceY)*0.045)}
 function setPhase(){let d=depthMeters(); if(!session){phase='surface';return;} phase=controls.up?'rise':'dive'; if(d<0.3) phase='surface';}
-function updateHUD(){const d=depthMeters(); $('depth').textContent='↕ '+d.toFixed(1)+' m'; $('clock').textContent='⏱ '+fmt(elapsed); $('rest').textContent='🩵 수면 휴식 '+fmt(restElapsed); $('rest').style.display=session?'none':'inline-block'; $('elapsed').textContent=Math.floor(elapsed)+'초'; $('phase').textContent=phase==='surface'?'☀ 수면':phase==='rise'?'🌊 상승 중':'🫧 잠수 중'; $('average').textContent=logbook.length?(logbook.reduce((a,b)=>a+(Number(b.seconds)||0),0)/logbook.length).toFixed(1)+'초':'기록 없음'; $('count').textContent=logbook.length+'회'; $('collected').textContent=new Set(photos.map(p=>p.key)).size+'종'; $('rares').textContent=seenRare+'회'; $('where').textContent='📍 '+spots[idx].name;const quickSpot=document.getElementById('quickSpot');if(quickSpot)quickSpot.textContent='🗺️ '+spots[idx].name+' · 변경 ⌄';const dives=logbook.map(x=>Number(x.seconds)||0),rests=logbook.filter(x=>x.restBefore!==null&&x.restBefore!==undefined).map(x=>Number(x.restBefore)||0);$('totalDive').textContent=totalFormat(dives.reduce((a,b)=>a+b,0));$('maxDive').textContent=totalFormat(Math.max(0,...dives));$('totalRest').textContent=totalFormat(rests.reduce((a,b)=>a+b,0));$('avgRest').textContent=rests.length?totalFormat(rests.reduce((a,b)=>a+b,0)/rests.length):'기록 없음'; if($('invAbalone')){$('invAbalone').textContent=inventory.abalone+'개';$('invHorn').textContent=inventory.hornShell+'개';$('invUrchin').textContent=(inventory.urchin||0)+'개';$('invCoin').textContent=inventory.coin+'개';$('invTotal').textContent=inventory.total+'개';} }
+function updateHUD(){const coinLabel=document.getElementById('blCoinHud');if(coinLabel)coinLabel.textContent='🪙 획득 '+(Number(inventory.coin)||0)+'개 · 게임머니 '+(Number(gearState.money)||0).toLocaleString('ko-KR')+'원';const d=depthMeters(); $('depth').textContent='↕ '+d.toFixed(1)+' m'; $('clock').textContent='⏱ '+fmt(elapsed); $('rest').textContent='🩵 수면 휴식 '+fmt(restElapsed); $('rest').style.display=session?'none':'inline-block'; $('elapsed').textContent=Math.floor(elapsed)+'초'; $('phase').textContent=phase==='surface'?'☀ 수면':phase==='rise'?'🌊 상승 중':'🫧 잠수 중'; $('average').textContent=logbook.length?(logbook.reduce((a,b)=>a+(Number(b.seconds)||0),0)/logbook.length).toFixed(1)+'초':'기록 없음'; $('count').textContent=logbook.length+'회'; $('collected').textContent=new Set(photos.map(p=>p.key)).size+'종'; $('rares').textContent=seenRare+'회'; $('where').textContent='📍 '+spots[idx].name;const quickSpot=document.getElementById('quickSpot');if(quickSpot)quickSpot.textContent='🗺️ '+spots[idx].name+' · 변경 ⌄';const dives=logbook.map(x=>Number(x.seconds)||0),rests=logbook.filter(x=>x.restBefore!==null&&x.restBefore!==undefined).map(x=>Number(x.restBefore)||0);$('totalDive').textContent=totalFormat(dives.reduce((a,b)=>a+b,0));$('maxDive').textContent=totalFormat(Math.max(0,...dives));$('totalRest').textContent=totalFormat(rests.reduce((a,b)=>a+b,0));$('avgRest').textContent=rests.length?totalFormat(rests.reduce((a,b)=>a+b,0)/rests.length):'기록 없음'; if($('invAbalone')){$('invAbalone').textContent=inventory.abalone+'개';$('invHorn').textContent=inventory.hornShell+'개';$('invUrchin').textContent=(inventory.urchin||0)+'개';$('invCoin').textContent=inventory.coin+'개';$('invTotal').textContent=inventory.total+'개';} }
 
 function spawnScene(){
   objects=[]; corals=[]; collectibles=[];
@@ -479,9 +486,10 @@ function updateCollectButton(){
   const c=nearbyCollectible(),b=$('gcollect');
   if(!c){b.style.display='none';return;}
   const name={coin:'🪙 코인',abalone:'🦪 전복',hornShell:'🐚 뿔소라',urchin:'🟣 성게'}[c.kind];
-  b.style.display='block';b.textContent=name+' 줍기';
+  b.style.touchAction='manipulation';b.style.pointerEvents='auto';b.style.display='block';b.textContent=name+' 줍기';
 }
-function tryCollect(){
+let lastManualPickup=0;function tryCollect(){
+  const now=performance.now();if(now-lastManualPickup<180)return;lastManualPickup=now;
   const best=nearbyCollectible();
   if(!best){notify('주변에 수집할 물건이 없어요. 반짝이는 물건 쪽으로 이동해 보세요!');return;}
   awardCollectible(best,false);
@@ -489,7 +497,7 @@ function tryCollect(){
 function awardCollectible(c,byPet){
  if(!c||c.taken)return;
  c.taken=true;
- if(c.kind==='coin') inventory.coin=(inventory.coin||0)+1;
+ if(c.kind==='coin'){inventory.coin=(inventory.coin||0)+1;gearState.money=(Number(gearState.money)||0)+12;saveGear();renderShop()}
  else if(c.kind==='abalone') inventory.abalone=(inventory.abalone||0)+1;
  else if(c.kind==='urchin') inventory.urchin=(inventory.urchin||0)+1;
  else inventory.hornShell=(inventory.hornShell||0)+1;
@@ -675,7 +683,7 @@ function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5); if(p.x<-120||p.x
 function drawDiver(t){
  const p=worldToScreen(diver.x,diver.y,diver.z); ctx.save(); ctx.translate(p.x,p.y+Math.sin(diver.swim)*2); if(diver.dir<0)ctx.scale(-1,1); ctx.scale(0.95+diver.z*0.18,0.95+diver.z*0.18);
  // feminine long wavy hair floating around shoulders
- ctx.lineCap='round'; const hairStyle=gearState.equipped.hair||'hair_wavy';const hairCount=hairStyle==='hair_short'?5:hairStyle==='hair_bob'?8:hairStyle==='hair_ponytail'?7:hairStyle==='hair_braid'?6:12;for(let i=0;i<hairCount;i++){const z=i/Math.max(1,hairCount-1);ctx.strokeStyle=i%3===0?'#493026':i%3===1?'#251c21':'#694438';ctx.lineWidth=3.4;ctx.beginPath();const x=-12+i*2.2;ctx.moveTo(x,-42);ctx.bezierCurveTo(x-8+Math.sin(t*.002+i)*2,-24,x+10*Math.sin(i+1),-12,x+8*Math.sin(i+1+t*.001),(hairStyle==='hair_short'?-23:hairStyle==='hair_bob'?-14:hairStyle==='hair_ponytail'?-4:hairStyle==='hair_braid'?14:5+z*5));ctx.stroke();}
+ ctx.lineCap='round'; const hairStyle=gearState.equipped.hair||(gearState.equipped.gender==='male'?'hair_short':'hair_wavy');const hairCount=(hairStyle==='hair_short'||hairStyle.startsWith('hair_men_'))?0:hairStyle==='hair_bob'?8:hairStyle==='hair_ponytail'?7:hairStyle==='hair_braid'?6:12;for(let i=0;i<hairCount;i++){const z=i/Math.max(1,hairCount-1);ctx.strokeStyle=GEAR_CATALOG.find(g=>g.id===hairStyle)?.color||(i%3===0?'#493026':i%3===1?'#251c21':'#694438');ctx.lineWidth=3.4;ctx.beginPath();const x=-12+i*2.2;ctx.moveTo(x,-42);ctx.bezierCurveTo(x-8+Math.sin(t*.002+i)*2,-24,x+10*Math.sin(i+1),-12,x+8*Math.sin(i+1+t*.001),((hairStyle==='hair_short'||hairStyle.startsWith('hair_men_'))?-23:hairStyle==='hair_bob'?-14:hairStyle==='hair_ponytail'?-4:hairStyle==='hair_braid'?14:5+z*5));ctx.stroke();}
  // black short sleeves and shorts, pronounced curved silhouette
  const outfit=gearState.equipped.outfit||'suit_black';const outfitColor=GEAR_CATALOG.find(g=>g.id===outfit)?.color||(outfit==='suit_mint'?'#64dbc6':outfit==='swim_pink'?'#ff95be':outfit==='swim_lilac'?'#bba1f5':'#111923');ctx.fillStyle=outfitColor;ctx.beginPath();ctx.moveTo(-13,-24);ctx.quadraticCurveTo(-25,-17,-21,-8);ctx.lineTo(-15,0);ctx.quadraticCurveTo(-17,14,-15,20);ctx.lineTo(-2,21);ctx.lineTo(0,10);ctx.lineTo(3,21);ctx.lineTo(17,19);ctx.quadraticCurveTo(17,9,13,0);ctx.quadraticCurveTo(23,-14,12,-24);ctx.closePath();ctx.fill();
  if(GEAR_CATALOG.find(g=>g.id===outfit)?.style==='shorts'){ctx.fillStyle='#e9b48c';ctx.fillRect(-13,-19,26,19);ctx.fillStyle=outfitColor;ctx.fillRect(-15,0,30,21);} ctx.strokeStyle=outfitColor;ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-17,-17);ctx.lineTo(-31,-5);ctx.moveTo(16,-17);ctx.lineTo(32,-5);ctx.stroke();
@@ -684,7 +692,7 @@ function drawDiver(t){
  const socksItem=GEAR_CATALOG.find(g=>g.id===gearState.equipped.socks);if(socksItem){ctx.strokeStyle=socksItem.color;ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(-10,20);ctx.lineTo(-8,31);ctx.moveTo(12,20);ctx.lineTo(14,31);ctx.stroke();} const fin=GEAR_CATALOG.find(g=>g.id===gearState.equipped.fins);ctx.fillStyle=fin?.color||'#e5f7f5';ctx.beginPath();ctx.moveTo(-13,28);ctx.lineTo(-5,28);ctx.lineTo(13,40);ctx.lineTo(0,40);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(8,28);ctx.lineTo(16,28);ctx.lineTo(34,41);ctx.lineTo(20,41);ctx.closePath();ctx.fill();
  ctx.fillStyle='#efb991';ctx.beginPath();ctx.arc(0,-35,12,0,Math.PI*2);ctx.fill();
  // Crown overlay closes the bare scalp while preserving each chosen hairstyle.
- ctx.fillStyle='#302328';ctx.beginPath();ctx.moveTo(-12,-36);ctx.bezierCurveTo(-15,-54,-7,-52,0,-51);ctx.bezierCurveTo(8,-53,16,-49,12,-35);ctx.quadraticCurveTo(6,-42,0,-41);ctx.quadraticCurveTo(-7,-43,-12,-36);ctx.closePath();ctx.fill();
+ ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===hairStyle)?.color||'#302328';ctx.beginPath();ctx.moveTo(-12,-36);ctx.bezierCurveTo(-15,-54,-7,-52,0,-51);ctx.bezierCurveTo(8,-53,16,-49,12,-35);ctx.quadraticCurveTo(6,-42,0,-41);ctx.quadraticCurveTo(-7,-43,-12,-36);ctx.closePath();ctx.fill();
  ctx.strokeStyle='#64413c';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-9,-42);ctx.quadraticCurveTo(-2,-51,7,-45);ctx.stroke();
  const maskItem=GEAR_CATALOG.find(g=>g.id===gearState.equipped.mask);ctx.fillStyle=maskItem?.color||'#ffffff';ctx.beginPath();ctx.roundRect(-15,-41,30,13,6);ctx.fill();ctx.fillStyle='#7bcbdc';ctx.beginPath();ctx.roundRect(-11,-38,22,7,3);ctx.fill();
  ctx.strokeStyle=gearState.equipped.snorkel?'#fff8de':'#f9ffff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(14,-35);ctx.lineTo(24,-43);ctx.lineTo(24,-60);ctx.stroke();
@@ -823,20 +831,34 @@ function drawSurface(t){
  // equipped game buoy on surface, separate from real-world safety equipment
  const buoyItem=GEAR_CATALOG.find(g=>g.id===gearState.equipped.buoy);if(buoyItem){ctx.save();ctx.translate(570,360+Math.sin(t*.002)*4);ctx.strokeStyle=buoyItem.color;ctx.lineWidth=16;ctx.beginPath();ctx.ellipse(0,0,33,17,0,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#f4ffff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-24,-12);ctx.lineTo(-14,-17);ctx.moveTo(17,13);ctx.lineTo(29,4);ctx.stroke();ctx.strokeStyle='#fff9';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-28,10);ctx.quadraticCurveTo(-63,25,-95,-7);ctx.stroke();ctx.restore();}
  // surface swimmer viewed from a slight distance, bobbing at the top of the water
- const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(460,350+bob);ctx.fillStyle='#3b2527';for(let i=0;i<10;i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
+ const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(460,350+bob);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
  const eq=gearState.equipped,item=(cat)=>GEAR_CATALOG.find(g=>g.id===eq[cat]);
  const outfit=item('outfit')?.color||(eq.outfit==='suit_mint'?'#64dbc6':eq.outfit==='swim_pink'?'#ff95be':eq.outfit==='swim_lilac'?'#bba1f5':'#111923');
  ctx.fillStyle=outfit;ctx.beginPath();ctx.ellipse(0,18,29,15,0,Math.PI,Math.PI*2);ctx.fill();
  if(item('socks')){ctx.fillStyle=item('socks').color;ctx.fillRect(-27,13,10,12);ctx.fillRect(17,13,10,12);} ctx.fillStyle='#e9b48c';ctx.beginPath();ctx.arc(0,-19,17,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#2d2024';ctx.beginPath();ctx.moveTo(-17,-19);ctx.quadraticCurveTo(-22,-49,0,-43);ctx.quadraticCurveTo(19,-43,18,-19);ctx.quadraticCurveTo(4,-34,-17,-19);ctx.fill();
- const hair=eq.hair||'hair_wavy';if(hair!=='hair_short'){ctx.strokeStyle='#302226';ctx.lineWidth=hair==='hair_braid'?8:5;ctx.beginPath();ctx.moveTo(-15,-24);ctx.quadraticCurveTo(-23,-6,-19,hair==='hair_bob'?4:16);ctx.moveTo(14,-24);ctx.quadraticCurveTo(23,-4,19,hair==='hair_bob'?4:16);ctx.stroke();}
+ ctx.fillStyle=item('hair')?.color||'#2d2024';ctx.beginPath();ctx.moveTo(-17,-19);ctx.quadraticCurveTo(-22,-49,0,-43);ctx.quadraticCurveTo(19,-43,18,-19);ctx.quadraticCurveTo(4,-34,-17,-19);ctx.fill();
+ const hair=eq.gender==='male'&&!String(eq.hair||'').startsWith('hair_men_')?'hair_short':(eq.hair||'hair_wavy');if(hair!=='hair_short'&&!hair.startsWith('hair_men_')){ctx.strokeStyle='#302226';ctx.lineWidth=hair==='hair_braid'?8:5;ctx.beginPath();ctx.moveTo(-15,-24);ctx.quadraticCurveTo(-23,-6,-19,hair==='hair_bob'?4:16);ctx.moveTo(14,-24);ctx.quadraticCurveTo(23,-4,19,hair==='hair_bob'?4:16);ctx.stroke();}
  if(hair==='hair_ponytail'||hair==='hair_braid'){ctx.strokeStyle='#302226';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(12,-35);ctx.quadraticCurveTo(36,-35,30,8);ctx.stroke();}
  const headwear=item('headwear');if(headwear){ctx.fillStyle=headwear.color;ctx.beginPath();ctx.ellipse(0,-36,20,headwear.id.startsWith('cap')?10:7,0,Math.PI,0);ctx.fill();ctx.fillRect(-18,-37,36,6);if(headwear.id.startsWith('cap'))ctx.fillRect(10,-38,24,5);}
  ctx.fillStyle=item('mask')?.color||'#fff';ctx.beginPath();ctx.roundRect(-20,-29,40,14,7);ctx.fill();ctx.fillStyle='#77bed2';ctx.fillRect(-15,-24,30,5);
  ctx.strokeStyle=item('snorkel')?.color||'#fff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(17,-20);ctx.lineTo(29,-35);ctx.lineTo(29,-52);ctx.stroke();ctx.restore();
  ctx.fillStyle='#eaffffd9';ctx.font='bold 22px system-ui';ctx.fillText('☀️ 수면 위에서 쉬는 중',34,510);ctx.font='18px system-ui';ctx.fillText('휴식 '+fmt(restElapsed)+'  ·  다시 입수하면 새 잠수가 시작돼요',34,540);ctx.fillText('지금까지 수집 '+inventory.total+'개  (전복 '+inventory.abalone+' · 뿔소라 '+inventory.hornShell+' · 성게 '+(inventory.urchin||0)+' · 코인 '+inventory.coin+')',34,570);
 }
-let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean-tab-open')){last=ts;requestAnimationFrame(render);return;}if(ts-last2DFrame<33){requestAnimationFrame(render);return;}last2DFrame=ts; const dt=Math.min(.05,(ts-last)/1000||0); last=ts; if(session) elapsed=(performance.now()-start)/1000; else restElapsed=Math.max(0,(Date.now()-restStartedWall)/1000); updatePlayer(dt); updateEntities(dt); checkGameAlarms(); if(!session){updateCollectButton();drawSurface(ts);window.BlueLogSync?.draw2D(ts);window.visibleEntities=[];updateHUD();updateAudio();requestAnimationFrame(render);return;} drawBackground(ts); drawTerrain(ts); draw2DExplorationSpot(ts); draw2DSeaCave(ts); drawBubbles(ts);
+
+// BLUE LOG v9: render only remote surface avatar at the waterline
+function blueDrawSurfacePeer(t,p,x){const originalGear=gearState.equipped;try{gearState.equipped=p.equipped||{}; const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(x,350+bob);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
+ const eq=gearState.equipped,item=(cat)=>GEAR_CATALOG.find(g=>g.id===eq[cat]);
+ const outfit=item('outfit')?.color||(eq.outfit==='suit_mint'?'#64dbc6':eq.outfit==='swim_pink'?'#ff95be':eq.outfit==='swim_lilac'?'#bba1f5':'#111923');
+ ctx.fillStyle=outfit;ctx.beginPath();ctx.ellipse(0,18,29,15,0,Math.PI,Math.PI*2);ctx.fill();
+ if(item('socks')){ctx.fillStyle=item('socks').color;ctx.fillRect(-27,13,10,12);ctx.fillRect(17,13,10,12);} ctx.fillStyle='#e9b48c';ctx.beginPath();ctx.arc(0,-19,17,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=item('hair')?.color||'#2d2024';ctx.beginPath();ctx.moveTo(-17,-19);ctx.quadraticCurveTo(-22,-49,0,-43);ctx.quadraticCurveTo(19,-43,18,-19);ctx.quadraticCurveTo(4,-34,-17,-19);ctx.fill();
+ const hair=eq.gender==='male'&&!String(eq.hair||'').startsWith('hair_men_')?'hair_short':(eq.hair||'hair_wavy');if(hair!=='hair_short'&&!hair.startsWith('hair_men_')){ctx.strokeStyle='#302226';ctx.lineWidth=hair==='hair_braid'?8:5;ctx.beginPath();ctx.moveTo(-15,-24);ctx.quadraticCurveTo(-23,-6,-19,hair==='hair_bob'?4:16);ctx.moveTo(14,-24);ctx.quadraticCurveTo(23,-4,19,hair==='hair_bob'?4:16);ctx.stroke();}
+ if(hair==='hair_ponytail'||hair==='hair_braid'){ctx.strokeStyle='#302226';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(12,-35);ctx.quadraticCurveTo(36,-35,30,8);ctx.stroke();}
+ const headwear=item('headwear');if(headwear){ctx.fillStyle=headwear.color;ctx.beginPath();ctx.ellipse(0,-36,20,headwear.id.startsWith('cap')?10:7,0,Math.PI,0);ctx.fill();ctx.fillRect(-18,-37,36,6);if(headwear.id.startsWith('cap'))ctx.fillRect(10,-38,24,5);}
+ ctx.fillStyle=item('mask')?.color||'#fff';ctx.beginPath();ctx.roundRect(-20,-29,40,14,7);ctx.fill();ctx.fillStyle='#77bed2';ctx.fillRect(-15,-24,30,5);
+ ctx.strokeStyle=item('snorkel')?.color||'#fff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(17,-20);ctx.lineTo(29,-35);ctx.lineTo(29,-52);ctx.stroke();ctx.restore();}finally{gearState.equipped=originalGear}}
+const blueCoinHud=document.createElement('span');blueCoinHud.id='blCoinHud';blueCoinHud.className='pill';blueCoinHud.style.cssText='font-size:12px;white-space:nowrap;background:#fff9d9;color:#795208';document.querySelector('.game .hud')?.append(blueCoinHud);
+let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean-tab-open')){last=ts;requestAnimationFrame(render);return;}if(ts-last2DFrame<33){requestAnimationFrame(render);return;}last2DFrame=ts; const dt=Math.min(.05,(ts-last)/1000||0); last=ts; if(session) elapsed=(performance.now()-start)/1000; else restElapsed=Math.max(0,(Date.now()-restStartedWall)/1000); updatePlayer(dt); updateEntities(dt); checkGameAlarms(); if(!session){updateCollectButton();drawSurface(ts);window.BlueLogSync?.drawSurfacePeers?.(ts);window.visibleEntities=[];updateHUD();updateAudio();requestAnimationFrame(render);return;} drawBackground(ts); drawTerrain(ts); draw2DExplorationSpot(ts); draw2DSeaCave(ts); drawBubbles(ts);
   const visible=[]; const layers=[]; for(const c of collectibles){ const r=drawCollectible(c,ts); if(r) layers.push({z:c.z||0.5,fn:null,data:r}); } for(const o of objects){ const hit=drawFish(o,ts); if(hit) visible.push(hit);} window.visibleEntities=visible; drawDiver(ts);window.BlueLogSync?.draw2D(ts);drawPetCompanion(ts);autoPetCollect(ts);updateCollectButton();
   const d=depthMeters(); if(d>0){ ctx.fillStyle=`rgba(0,25,48,${clamp(d/80,0,.36)})`; ctx.fillRect(0,0,W,H);} if(d>10){ ctx.fillStyle=`rgba(0,12,28,${clamp((d-10)/60,0,.14)})`; ctx.fillRect(0,0,W,H);} updateHUD(); updateAudio(); requestAnimationFrame(render); }
 
@@ -938,7 +960,7 @@ function speechNotice(txt){
  if(v)u.voice=v;
  window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
 }
-function sendGameNotification(txt){if(oceanPrefs.display)notify('🔔 '+txt);speechNotice(txt);if(oceanPrefs.vibrate&&navigator.vibrate)navigator.vibrate([140,70,140]);}
+function sendGameNotification(txt){if(oceanPrefs.display){notify('🔔 '+txt);window.blueShowTimedAlert?.(txt)}speechNotice(txt);if(oceanPrefs.vibrate&&navigator.vibrate)navigator.vibrate([140,70,140]);}
 function checkGameAlarms(){if(!session){previousGameSession=false;return;}if(!previousGameSession){previousGameSession=true;lastGameNotification=-1;thresholdNotified=false;}const sec=Math.floor(elapsed);if(oceanPrefs.interval>0&&sec>0&&sec%oceanPrefs.interval===0&&sec!==lastGameNotification){lastGameNotification=sec;sendGameNotification((VOICE_MESSAGES[currentGameLanguage()]||VOICE_MESSAGES.ko).interval(Math.floor(sec/60),sec%60));}if(oceanPrefs.threshold>0&&sec>=oceanPrefs.threshold&&!thresholdNotified){thresholdNotified=true;sendGameNotification(currentVoiceMessage());}}
 
 spawnScene(); requestAnimationFrame(render);
@@ -1367,11 +1389,11 @@ for(const rp of peers){
   add(new T.SphereGeometry(.46,12,9),'#eec09b',0,1.38,0);
   
   // Real gear variants, not the same generic head for every swimmer.
-  const hairId=String(equipped.hair||'hair_wavy');
+  const hairId=String(equipped.hair||(equipped.gender==='male'?'hair_short':'hair_wavy'));
   const hairColor=remoteGearColor(equipped.hair,'#30232b');
   if(!equipped.headwear){
     const crown=add(new T.SphereGeometry(.49,12,8),hairColor,0,1.65,-.02);crown.scale.set(1,.60,1);
-    if(!hairId.includes('short')){
+    if(!hairId.includes('short')&&!hairId.startsWith('hair_men_')){
       const strands=hairId.includes('braid')?2:hairId.includes('ponytail')?1:hairId.includes('bob')?5:8;
       for(let k=0;k<strands;k++){
         const a=(k/(strands||1))*Math.PI*1.65+.7;
@@ -1394,7 +1416,14 @@ for(const rp of peers){
   group.userData.version=key;
  }
  const remoteDepth=Math.max(0,Number(rp.depth)||0),remoteX=(Number(rp.x)||620)-620;
- group.position.set(remoteX*.05*1.45+(Number(rp.navX)||0),(rp.diving?-remoteDepth*95:4.4),-12+(Number(rp.navZ)||0));group.rotation.y=Number(rp.yaw)||0;
+ // Visible local 3D neighborhood: preserve relative depth but avoid 95-world-units-per-meter hiding peers.
+ const viewForward=new T.Vector3(0,0,-1).applyEuler(camera.rotation);viewForward.y=0;viewForward.normalize();
+ const viewRight=new T.Vector3(1,0,0).applyAxisAngle(new T.Vector3(0,1,0),camera.rotation.y);
+ const relX=Math.max(-7,Math.min(7,(Number(rp.x)-diver.x)*.035+(Number(rp.navX)||0)-navX));
+ const relY=Math.max(-5,Math.min(5,(m-remoteDepth)*1.2));
+ const relZ=Math.max(-4,Math.min(4,(Number(rp.navZ)||0)-navZ));
+ group.position.copy(camera.position).addScaledVector(viewForward,14+relZ).addScaledVector(viewRight,relX);group.position.y+=relY;
+ group.rotation.y=Number(rp.yaw)||0;group.scale.setScalar(1.8);
  group.visible=true;
  const proj=group.position.clone().project(camera),vw=view.clientWidth,vh=view.clientHeight;
  window.BlueLog3DPosition[rp.id]=(proj.z>=-1&&proj.z<=1&&proj.x>=-1&&proj.x<=1&&proj.y>=-1&&proj.y<=1)?{x:(proj.x+1)*vw/2+(view.offsetLeft||0),y:(1-proj.y)*vh/2+(view.offsetTop||0)}:null;
@@ -1772,6 +1801,7 @@ function display2D(t){
    try{diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
  }
 }
+function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=460;blueDrawSurfacePeer(t,p,x)}}
 const clickTargets=new Map();
 function updateHitTargets(){
  const current=new Set();const three=game.classList.contains('is3d');layer.classList.toggle('three',three);
@@ -1779,7 +1809,7 @@ function updateHitTargets(){
   current.add(p.id);let el=clickTargets.get(p.id);if(!el){el=document.createElement('button');el.type='button';el.className='blRemoteHit';el.innerHTML='<span class="blLabel"></span>';el.onclick=()=>inspect(p.id);layer.append(el);clickTargets.set(p.id,el)}
   el.querySelector('span').textContent=p.nick;let pos=null;
   if(three){pos=window.BlueLog3DPosition?.[p.id]||null;}else if(typeof worldToScreen==='function'){
-    const q=coords(p),a=worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
+    const q=coords(p),a=typeof session!=='undefined'&&!session?(!p.diving?{x:460,y:350}:null):worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
     if(c)pos={x:(a.x/c.width)*(c.clientWidth||game.clientWidth)+(c.offsetLeft||0),y:(a.y/c.height)*(c.clientHeight||game.clientHeight)+(c.offsetTop||0)};
   }
   if(pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&pos.x>=0&&pos.x<=game.clientWidth&&pos.y>=0&&pos.y<=game.clientHeight){el.style.display='block';el.style.left=pos.x+'px';el.style.top=pos.y+'px'}else{el.style.display='none'}
@@ -1800,10 +1830,66 @@ const tick=setInterval(()=>{if(ws?.readyState!==1)return;
  const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'바다':'바다',x:q.x,y:q.y,z:q.z,dir:q.dir,swim:q.swim,navX:window.BL3DCamera?.x||0,navZ:window.BL3DCamera?.z||0,yaw:window.BL3DCamera?.yaw||0,diving:d.diving,depth:d.depth});
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
-window.BlueLogSync={draw2D:display2D,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect};
+window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect};
 function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
+})();
+</script>
+<style>#blGenderBar{padding:9px;background:#e5f9ff;border-radius:10px;color:#174e65;margin:7px 0}#blGenderBar select{width:100%;padding:9px;margin-top:5px}</style><script>(function(){const shop=document.getElementById('shopGrid');if(!shop||document.getElementById('blGenderBar'))return;const bar=document.createElement('div');bar.id='blGenderBar';bar.innerHTML='<label>기본 캐릭터 외형 <select id="blGenderEdit"><option value="female">여자</option><option value="male">남자 · 숏컷</option></select></label>';shop.parentElement.insertBefore(bar,shop);const el=document.getElementById('blGenderEdit');el.value=gearState.equipped.gender||localStorage.getItem('blue_gender_preference_v9')||'female';el.onchange=()=>{const sex=el.value;gearState.equipped.gender=sex;if(sex==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))gearState.equipped.hair='hair_short';if(sex==='female'&&gearState.equipped.hair==='hair_short')delete gearState.equipped.hair;saveGear();renderShop();drawCharacterPreview();localStorage.setItem('blue_gender_preference_v9',sex)}})();</script>
+<!-- BLUE LOG v7 first-time setup -->
+<style>
+#blFirstSetup{position:fixed;inset:0;z-index:10000;background:#033c53b8;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}#blFirstSetup[hidden]{display:none}#blFirstSetup .box{width:min(430px,96vw);max-height:92vh;overflow:auto;background:#f4fcff;border:2px solid #62c8eb;border-radius:22px;box-shadow:0 12px 55px #00375566;padding:21px;color:#113f56}#blFirstSetup label{display:block;font-weight:700;font-size:13px;margin-top:10px}#blFirstSetup input:not([type=checkbox]),#blFirstSetup select{width:100%;box-sizing:border-box;border:1px solid #90c9d9;border-radius:10px;background:white;color:#113f56;padding:10px;margin-top:5px;font-size:16px}#blFirstSetup .checks{display:flex;gap:10px;flex-wrap:wrap;margin:9px 0}#blFirstSetup .checks label{margin:0}#blFirstSetup button{background:#4ac6ed;border:0;border-radius:13px;width:100%;padding:13px;margin-top:16px;font-weight:800;color:#073c53}#blFirstSetup small{color:#466b7b}
+</style>
+<script>
+(()=>{
+const key='blue_log_onboarding_v9';let profile={};try{profile=JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}')}catch{}
+if(localStorage.getItem(key)==='yes')return
+const overlay=document.createElement('div');overlay.id='blFirstSetup';overlay.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="blWelcomeTitle"><h2 id="blWelcomeTitle">🤿 BLUE LOG 첫 입장!</h2><p>닉네임과 기본 설정을 완료하면 바다 탐험을 시작할 수 있어요.</p><label>다이버 닉네임 (필수)<input id="blOnNick" maxlength="16" placeholder="예: 바다거북" autocomplete="nickname"></label><label>캐릭터 기본 설정 (필수)<select id="blOnGender" required><option value="">여자 / 남자 선택</option><option value="female">여자</option><option value="male">남자</option></select></label><label>프리다이빙 교육기관 (선택)<select id="blOnAgency"><option value="none">선택하지 않음</option><option value="PADI">PADI</option><option value="AIDA">AIDA</option></select></label><label>게임 시간 알림 간격 (선택)<select id="blOnInterval"><option value="0">끄기</option><option value="15">15초마다</option><option value="30">30초마다</option><option value="60">1분마다</option><option value="90">1분 30초마다</option><option value="120">2분마다</option><option value="300">5분마다</option></select></label><div class="checks"><label><input type="checkbox" id="blOnVoice"> 음성</label><label><input type="checkbox" id="blOnVibrate"> 진동</label><label><input type="checkbox" id="blOnText" checked> 화면 알림</label></div><label>특정 시간 알림 (초)<input id="blOnThreshold" type="number" min="0" max="3600" value="60"></label><small>이 알람은 게임 시뮬레이션용이야. 실제 스태틱 훈련의 안전 타이머로 사용하면 안 돼. 실제 훈련은 반드시 안전요원 동반하에 진행해.</small><p id="blOnError" style="color:#b02d35" role="alert"></p><button id="blOnStart">설정 저장하고 탐험 시작</button></div>`;document.body.append(overlay);
+const $=id=>document.getElementById(id);
+$('blOnStart').onclick=()=>{const nick=$('blOnNick').value.trim();if(!nick){$('blOnError').textContent='닉네임을 입력해 줘.';$('blOnNick').focus();return}const gender=$('blOnGender').value;if(!['female','male'].includes(gender)){$('blOnError').textContent='캐릭터 기본 설정에서 여자 또는 남자를 선택해 줘.';return}const seconds=Number($('blOnThreshold').value);if(!Number.isFinite(seconds)||seconds<0||seconds>3600){$('blOnError').textContent='시간은 0~3600초로 설정해 줘.';return}const n=$('diverNickname'),a=$('diverAgency');if(n)n.value=nick;if(a){a.value=$('blOnAgency').value;a.dispatchEvent(new Event('change',{bubbles:true}))}const saveProfile=$('saveProfile');saveProfile?.click();try{const cosmetics=JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}');cosmetics.equipped=cosmetics.equipped||{};cosmetics.equipped.gender=gender;if(gender==='male'&&!String(cosmetics.equipped.hair||'').startsWith('hair_men_'))cosmetics.equipped.hair='hair_short';if(gender==='female'&&cosmetics.equipped.hair==='hair_short')delete cosmetics.equipped.hair;localStorage.setItem('blue_cosmetics_v11',JSON.stringify(cosmetics));localStorage.setItem('blue_gender_preference_v9',gender);if(typeof gearState!=='undefined'){gearState.equipped=cosmetics.equipped;saveGear();renderShop();drawCharacterPreview()}window.dispatchEvent(new Event('storage'))}catch(e){console.warn('외형 설정 저장 실패',e)}const pairs=[['alertEvery','blOnInterval'],['alertVoice','blOnVoice'],['alertVibrate','blOnVibrate'],['alertText','blOnText'],['thresholdTime','blOnThreshold']];for(const [target,src]of pairs){const el=$(target),v=$(src);if(el&&v){if(el.type==='checkbox')el.checked=v.checked;else el.value=v.value}}$('saveSettings')?.click();localStorage.setItem(key,'yes');overlay.remove()};$('blOnNick').value=String(profile.nickname||'').slice(0,16);$('blOnGender').value=localStorage.getItem('blue_gender_preference_v9')||'';$('blOnNick').focus();
+})();
+</script>
+
+<!-- BLUE LOG GAME TIME ALERT FIX -->
+<style>
+#blTimeAlert{position:absolute;z-index:60;top:96px;left:50%;transform:translate(-50%,-14px);padding:12px 19px;background:rgba(5,73,101,.94);color:#fff;border:2px solid rgba(198,250,255,.95);border-radius:18px;box-shadow:0 8px 24px rgba(0,35,60,.36);font:800 16px/1.4 system-ui,'Noto Sans KR',sans-serif;max-width:78%;text-align:center;pointer-events:none;opacity:0;transition:opacity .18s,transform .18s;white-space:normal}
+#blTimeAlert.on{opacity:1;transform:translate(-50%,0)}
+.game{position:relative}
+@media(max-width:700px){#blTimeAlert{top:112px;font-size:14px;padding:10px 14px}}
+</style>
+<script>
+(()=>{'use strict';let timer=0;const game=document.querySelector('.game');if(!game)return;const el=document.createElement('div');el.id='blTimeAlert';el.setAttribute('role','status');el.setAttribute('aria-live','polite');game.appendChild(el);
+window.blueShowTimedAlert=(msg)=>{el.textContent='🔔 '+String(msg);el.classList.add('on');clearTimeout(timer);timer=setTimeout(()=>{el.classList.remove('on')},3000)};
+})();
+</script>
+
+<!-- BLUE LOG TWO-FINGER PICKUP -->
+<style>
+#oceanJoystick{touch-action:none!important;overscroll-behavior:contain;user-select:none;-webkit-user-select:none}
+#gcollect{touch-action:none!important;user-select:none;-webkit-user-select:none;pointer-events:auto;z-index:19!important;min-height:53px}
+.game{touch-action:pan-y}
+</style>
+<script>
+(()=>{'use strict';
+const joy=document.getElementById('oceanJoystick'),pickup=document.getElementById('gcollect');
+if(!joy||!pickup)return;
+// The existing joystick already uses setPointerCapture; do not let a second finger reset its pointer.
+let pickId=null,repeat=null,lastPickup=0;
+function take(){if(typeof tryCollect!=='function')return;const now=performance.now();if(now-lastPickup<240)return;lastPickup=now;tryCollect();}
+function stop(e){if(e&&pickId!==null&&e.pointerId!==pickId)return;pickId=null;clearInterval(repeat);repeat=null;}
+pickup.addEventListener('pointerdown',e=>{
+ if(pickId!==null||e.button!==0)return;
+ e.preventDefault();e.stopPropagation();pickId=e.pointerId;
+ try{pickup.setPointerCapture(e.pointerId)}catch{}
+ take();clearInterval(repeat);repeat=setInterval(()=>{if(pickId!==null&&pickup.isConnected&&pickup.style.display!=='none'&&typeof nearbyCollectible==='function'&&nearbyCollectible())take()},310);
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])pickup.addEventListener(event,stop);
+// Prevent a synthetic click from collecting twice after pointerdown; keyboard activation still works.
+pickup.addEventListener('click',e=>{if(e.detail!==0){e.preventDefault();e.stopImmediatePropagation()}},true);
+// The old joystick stop handler remains intact; guard a new finger from hijacking an active joystick.
+joy.addEventListener('pointerdown',e=>{if(joy.hasPointerCapture?.(e.pointerId))return;},false);
+window.addEventListener('blur',()=>stop());
 })();
 </script>
 </body>
