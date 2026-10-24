@@ -490,7 +490,26 @@ function spawnScene(){
 spots.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.textContent=s.name;$('place').appendChild(o)});
 $('place').onchange=e=>{if(session)finishDive(); idx=+e.target.value; spawnScene(); updateAudio();};
 
-function finishDive(){let finished=null;if(session){const seconds=Math.max(0,Math.round((performance.now()-start)/1000));elapsed=seconds;finished={seconds,restBefore:pendingRest,place:spots[idx].name,at:new Date().toISOString()};}session=false;phase='surface';startSurfaceRest();diver.y=surfaceY-8;diver.vy=0;updateAudio();updateHUD();if(finished){const yes=window.confirm('🌊 수면으로 돌아왔어요!\n이번 잠수 '+finished.seconds+'초를 잠수 기록에 저장할까요?\n\n확인: 기록 저장 / 취소: 게임만 즐기고 기록 제외');if(yes){records.push(finished.seconds);try{localStorage.setItem('blue_records',JSON.stringify(records))}catch(e){}logbook.push(finished);saveDiveLog();notify('이번 잠수 '+finished.seconds+'초를 기록에 저장했어요.')}else{notify('이번 잠수는 게임 플레이로만 처리하고 기록에서 제외했어요.')}updateHUD()}else notify('수면으로 돌아왔어요.');}
+let diveRecordToastTimer=null;
+function hideDiveRecordToast(){
+ clearTimeout(diveRecordToastTimer);
+ const toast=document.getElementById('blDiveRecordToast');
+ if(toast)toast.remove();
+}
+function offerDiveRecord(finished){
+ hideDiveRecordToast();
+ const toast=document.createElement('div');toast.id='blDiveRecordToast';
+ toast.setAttribute('role','status');
+ toast.style.cssText='position:fixed;z-index:210;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(370px,calc(100vw - 24px));background:#e7faff;box-shadow:0 6px 26px #00354b66;border:1px solid #78cadf;border-radius:13px;padding:10px 12px;color:#11425b;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px';
+ const label=document.createElement('span');label.textContent='🌊 '+finished.seconds+'초 잠수 · 기록할까요?';label.style.cssText='font-weight:750;flex:1';toast.appendChild(label);
+ const yes=document.createElement('button');yes.type='button';yes.textContent='저장';yes.style.cssText='padding:7px 10px;min-height:34px;white-space:nowrap;background:#19b8bc;color:#073b45;border-radius:9px';
+ const no=document.createElement('button');no.type='button';no.textContent='넘기기';no.style.cssText='padding:7px 9px;min-height:34px;white-space:nowrap;background:#d7e8ef;color:#18465a;border-radius:9px';
+ toast.append(yes,no);document.body.appendChild(toast);
+ yes.onclick=()=>{hideDiveRecordToast();records.push(finished.seconds);try{localStorage.setItem('blue_records',JSON.stringify(records))}catch(e){}logbook.push(finished);saveDiveLog();updateHUD();notify('이번 잠수 '+finished.seconds+'초를 기록에 저장했어요.')};
+ no.onclick=()=>hideDiveRecordToast();
+ diveRecordToastTimer=setTimeout(()=>{if(toast.isConnected)hideDiveRecordToast()},5000);
+}
+function finishDive(){let finished=null;if(session){const seconds=Math.max(0,Math.round((performance.now()-start)/1000));elapsed=seconds;finished={seconds,restBefore:pendingRest,place:spots[idx].name,at:new Date().toISOString()};}session=false;phase='surface';startSurfaceRest();diver.y=surfaceY-8;diver.vy=0;updateAudio();updateHUD();if(finished)offerDiveRecord(finished);else notify('수면으로 돌아왔어요.');}
 $('enter').onclick=()=>{if(session)return; pendingRest=Math.max(0,(Date.now()-restStartedWall)/1000); session=true; elapsed=0; start=performance.now(); if(diver.y<surfaceY+8) diver.y=surfaceY+18; phase='dive'; notify('입수했어요! 위아래로 헤엄치며 더 깊은 바다를 탐험해 보세요.'); updateAudio(); updateHUD(); };
 $('deeper').onclick=()=>{if(!session) return; diver.vy+=35; controls.down=true; setTimeout(()=>controls.down=false,120);};
 $('rise').onclick=()=>{if(!session) return; diver.vy-=35; controls.up=true; setTimeout(()=>controls.up=false,120);};
