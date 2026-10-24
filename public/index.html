@@ -498,13 +498,22 @@ function hideDiveRecordToast(){
 }
 function offerDiveRecord(finished){
  hideDiveRecordToast();
- const toast=document.createElement('div');toast.id='blDiveRecordToast';
+ const game=document.querySelector('.game');
+ if(!game)return;
+ const toast=document.createElement('div');
+ toast.id='blDiveRecordToast';
  toast.setAttribute('role','status');
- toast.style.cssText='position:fixed;z-index:210;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(370px,calc(100vw - 24px));background:#e7faff;box-shadow:0 6px 26px #00354b66;border:1px solid #78cadf;border-radius:13px;padding:10px 12px;color:#11425b;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px';
- const label=document.createElement('span');label.textContent='🌊 '+finished.seconds+'초 잠수 · 기록할까요?';label.style.cssText='font-weight:750;flex:1';toast.appendChild(label);
- const yes=document.createElement('button');yes.type='button';yes.textContent='저장';yes.style.cssText='padding:7px 10px;min-height:34px;white-space:nowrap;background:#19b8bc;color:#073b45;border-radius:9px';
- const no=document.createElement('button');no.type='button';no.textContent='넘기기';no.style.cssText='padding:7px 9px;min-height:34px;white-space:nowrap;background:#d7e8ef;color:#18465a;border-radius:9px';
- toast.append(yes,no);document.body.appendChild(toast);
+ // Non-blocking game overlay: never use window.confirm/alert for dive saves.
+ toast.style.cssText='position:absolute;z-index:95;top:115px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 16px);background:#ffe16a;color:#3d2b07;border:1px solid #d9ad2f;box-shadow:0 3px 10px #2e330033;border-radius:10px;padding:5px 7px;display:flex;align-items:center;justify-content:center;gap:5px;pointer-events:none;font-size:11px';
+ const label=document.createElement('span');
+ label.textContent='⏱ '+finished.seconds+'초 · 스태틱 기록 저장?';
+ label.style.cssText='font-weight:850;white-space:nowrap;text-align:center';
+ const actions=document.createElement('div');actions.style.cssText='display:flex;gap:4px;pointer-events:auto;flex-shrink:0';
+ const yes=document.createElement('button');yes.type='button';yes.textContent='저장';
+ yes.style.cssText='padding:4px 7px;min-height:27px;background:#195c49;color:white;border:0;border-radius:8px;font-size:12px;font-weight:800';
+ const no=document.createElement('button');no.type='button';no.textContent='닫기';
+ no.style.cssText='padding:4px 7px;min-height:27px;background:#fff8c6;color:#453306;border:1px solid #bda443;border-radius:8px;font-size:12px;font-weight:800';
+ actions.append(yes,no);toast.append(label,actions);game.appendChild(toast);
  yes.onclick=()=>{hideDiveRecordToast();records.push(finished.seconds);try{localStorage.setItem('blue_records',JSON.stringify(records))}catch(e){}logbook.push(finished);saveDiveLog();updateHUD();notify('이번 잠수 '+finished.seconds+'초를 기록에 저장했어요.')};
  no.onclick=()=>hideDiveRecordToast();
  diveRecordToastTimer=setTimeout(()=>{if(toast.isConnected)hideDiveRecordToast()},5000);
