@@ -301,7 +301,7 @@ let diver={x:620,y:surfaceY-8,z:0.55,vx:0,vy:0,vz:0,dir:1,swim:0};
 let cam={x:0,y:0};
 // The surface has its own front/back swimming lane; underwater depth stays independent.
 let surfaceLane=0.45;
-function surfacePosition(){return {x:110+(diver.x-40)/(worldW-80)*(W-220),y:348+(surfaceLane-0.45)*145};}
+function surfacePosition(){return {x:110+(diver.x-40)/(worldW-80)*(W-220),y:367+(surfaceLane-0.45)*12};}
 let inventory={abalone:0,hornShell:0,urchin:0,coin:0,total:0};
 let controls={left:false,right:false,up:false,down:false,forward:false,back:false};
 let pointerDown=null; let restStarted=performance.now(), restElapsed=0;
@@ -728,7 +728,13 @@ function draw2DSeaCave(t){
  ctx.restore();
 }
 function drawBubbles(t){for(let i=0;i<48;i++){const x=(i*71+Math.sin(i+t*.0008)*22-cam.x*.08)%1050-20; const y=(i*87 - t*.05*(1+i%3)+2200-cam.y*.15)%780-80; ctx.strokeStyle='rgba(224,255,255,.55)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,1.8+(i%3),0,Math.PI*2); ctx.stroke();}}
-function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5); if(p.x<-(o.key==='pod'?570:120)||p.x>W+(o.key==='pod'?570:120)||p.y<-(o.key==='pod'?340:120)||p.y>H+(o.key==='pod'?340:120)) return null; ctx.save(); ctx.translate(p.x,p.y+Math.sin(t*.0012+o.seed)*5); if(o.speed<0) ctx.scale(-1,1); const k=o.key; const z=(o.size/25)*p.scale; ctx.scale(z,z);
+function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5);
+ // Use the actual projected bounds for giant whales. The old fixed 120px
+ // cutoff made a whale vanish even while most of its body was still onscreen.
+ const giantWhale=['whale','humpback','spermwhale'].includes(o.key);
+ const extentX=giantWhale?Math.max(120,(o.size/25)*p.scale*105):(o.key==='pod'?570:120);
+ const extentY=giantWhale?Math.max(120,(o.size/25)*p.scale*90):(o.key==='pod'?340:120);
+ if(p.x < -extentX || p.x > W+extentX || p.y < -extentY || p.y > H+extentY) return null; ctx.save(); ctx.translate(p.x,p.y+Math.sin(t*.0012+o.seed)*5); if(o.speed<0) ctx.scale(-1,1); const k=o.key; const z=(o.size/25)*p.scale; ctx.scale(z,z);
   if(['squid','shrimp','crab','pod','dolphin','whale','humpback','spermwhale'].includes(k)){
     const ellipse=(x,y,rx,ry,color)=>{ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()};
     if(k==='squid'){
@@ -1029,7 +1035,7 @@ function drawSurface(t){
 }
 
 // BLUE LOG v9: render only remote surface avatar at the waterline
-function blueDrawSurfacePeer(t,p,x){const originalGear=gearState.equipped;try{gearState.equipped=p.equipped||{}; const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(x,350+bob);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
+function blueDrawSurfacePeer(t,p,x){const originalGear=gearState.equipped;try{gearState.equipped=p.equipped||{}; const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(x,367+bob);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
  const eq=gearState.equipped,item=(cat)=>GEAR_CATALOG.find(g=>g.id===eq[cat]);
  const outfit=item('outfit')?.color||(eq.outfit==='suit_mint'?'#64dbc6':eq.outfit==='swim_pink'?'#ff95be':eq.outfit==='swim_lilac'?'#bba1f5':'#111923');
  ctx.fillStyle=outfit;ctx.beginPath();ctx.ellipse(0,18,29,15,0,Math.PI,Math.PI*2);ctx.fill();
@@ -2191,7 +2197,7 @@ function display2D(t){
    try{diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
  }
 }
-function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=460;blueDrawSurfacePeer(t,p,x)}}
+function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=290+(i%5)*105;blueDrawSurfacePeer(t,p,x)}}
 const clickTargets=new Map();
 function updateHitTargets(){
  const current=new Set();const three=game.classList.contains('is3d');layer.classList.toggle('three',three);
@@ -2199,7 +2205,7 @@ function updateHitTargets(){
   current.add(p.id);let el=clickTargets.get(p.id);if(!el){el=document.createElement('button');el.type='button';el.className='blRemoteHit';el.innerHTML='<span class="blLabel"></span>';el.onclick=()=>inspect(p.id);layer.append(el);clickTargets.set(p.id,el)}
   el.querySelector('span').textContent=p.nick;let pos=null;
   if(three){pos=window.BlueLog3DPosition?.[p.id]||null;}else if(typeof worldToScreen==='function'){
-    const q=coords(p),a=typeof session!=='undefined'&&!session?(!p.diving?{x:460,y:350}:null):worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
+    const q=coords(p),a=typeof session!=='undefined'&&!session?(!p.diving?{x:290+(players.filter(v=>v.id!==me&&Number(v.spot)===myPlace()&&!v.diving).findIndex(v=>v.id===p.id)%5)*105,y:367}:null):worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
     if(c)pos={x:(a.x/c.width)*(c.clientWidth||game.clientWidth)+(c.offsetLeft||0),y:(a.y/c.height)*(c.clientHeight||game.clientHeight)+(c.offsetTop||0)};
   }
   if(pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&pos.x>=0&&pos.x<=game.clientWidth&&pos.y>=0&&pos.y<=game.clientHeight){el.style.display='block';el.style.left=pos.x+'px';el.style.top=pos.y+'px'}else{el.style.display='none'}
