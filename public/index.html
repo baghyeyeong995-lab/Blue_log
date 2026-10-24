@@ -1680,5 +1680,40 @@ document.getElementById('saveSettings')?.addEventListener('click',()=>{setTimeou
 translateOptions();
 })();
 </script>
+
+<!-- BLUE LOG LIVE MULTIPLAYER CLIENT v1 -->
+<style>
+#blueLiveBadge{position:fixed;right:12px;top:80px;z-index:90;background:#edfaffeb;color:#124c68;border:1px solid #70c6e8;border-radius:16px;padding:7px 12px;box-shadow:0 3px 15px #002f4a33;font-weight:800;font-size:12px;max-width:65%;cursor:pointer}
+#blueLiveToast{position:fixed;right:12px;top:125px;z-index:115;background:#096488f0;color:white;border-radius:13px;padding:10px 13px;font-weight:700;font-size:13px;max-width:77%;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .2s,transform .2s}
+#blueLiveToast.show{opacity:1;transform:translateY(0)}
+#onlinePanel .blueLiveRow{padding:9px 0;border-top:1px solid #a9d5e8;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:5px}
+#onlinePanel .blueLiveRow button{padding:6px 9px;font-size:12px}
+@media(max-width:760px){#blueLiveBadge{top:56px}#blueLiveToast{top:103px}}
+</style>
+<button id="blueLiveBadge" type="button">🌐 서버 연결 중…</button><div id="blueLiveToast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+'use strict';
+const panel=document.getElementById('onlinePanel'),badge=document.getElementById('blueLiveBadge'),toast=document.getElementById('blueLiveToast');if(!panel||!badge)return;
+const count=panel.querySelector('.stat b'),hint=panel.querySelector('p.muted'),list=document.createElement('div');panel.appendChild(list);
+const TOKEN='blue_log_live_token_v1',AVATAR='blue_log_live_avatar_v1';let socket,id=null,players=[],seen=null,delay=1000,toastTimer,retryTimer,stopped=false;
+const isKo=()=>document.getElementById('language')?.value==='ko';const txt=(ko,en)=>isKo()?ko:en;
+function nick(){try{return String(JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}').nickname||'').trim().slice(0,16)||txt('바다 탐험가','Ocean diver')}catch{return txt('바다 탐험가','Ocean diver')}}
+function avatar(){let x=Number(localStorage.getItem(AVATAR));if(!Number.isInteger(x)||x<0||x>5){x=Math.floor(Math.random()*6);localStorage.setItem(AVATAR,String(x))}return x}
+function send(x){if(socket&&socket.readyState===1)socket.send(JSON.stringify(x))}
+function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),4200)}
+function draw(){const ok=socket&&socket.readyState===1&&!!id;badge.textContent=ok?'🟢 '+txt(players.length+'명 접속 중',players.length+' online'):'⚪ '+txt('서버 연결 중…','Connecting…');if(count)count.textContent=ok?txt(players.length+'명 접속 중',players.length+' online'):txt('서버 연결 중…','Connecting…');if(hint)hint.textContent=ok?txt('실제 접속한 다이버만 표시됩니다. 기록을 누르면 서버 저장 기록을 확인합니다.','Only currently connected divers appear. Tap records to view server-saved statistics.'):txt('실시간 서버에 연결 중입니다.','Connecting to the live server.');list.replaceChildren();for(const p of players){const row=document.createElement('div'),label=document.createElement('span'),btn=document.createElement('button');row.className='blueLiveRow';label.textContent='🤿 '+p.nick+(p.id===id?txt(' (나)',' (me)'):'')+(p.diving?txt(' · 잠수 중',' · diving'):txt(' · 수면',' · surface'));btn.type='button';btn.textContent=txt('기록 보기','Records');btn.onclick=()=>send({type:'inspect',id:p.id});row.append(label,btn);list.append(row)}}
+function connect(){if(stopped)return;id=null;players=[];seen=null;draw();try{socket=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/')}catch{schedule();return}
+socket.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:avatar(),token:localStorage.getItem(TOKEN)||''})};
+socket.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='welcome'){id=m.id;if(typeof m.token==='string')localStorage.setItem(TOKEN,m.token);draw()}else if(m.type==='players'&&Array.isArray(m.players)){const next=m.players.filter(p=>p&&typeof p.id==='string'&&typeof p.nick==='string');if(seen!==null){for(const p of next)if(p.id!==id&&!seen.has(p.id))notify('🤿 '+p.nick+txt('님이 입장했어요!',' joined!'));for(const p of players)if(p.id!==id&&!next.some(x=>x.id===p.id))notify('👋 '+p.nick+txt('님이 퇴장했어요.',' left.'))}players=next;seen=new Set(next.map(p=>p.id));draw()}else if(m.type==='inspect'){const s=m.stats||{};notify('📊 '+m.nick+' · '+(s.dives||0)+txt('회 · 평균 ',' dives · average ')+(s.average||0)+txt('초 · 최장 ','s · longest ')+(s.longest||0)+'s')}else if(m.type==='error'){notify(String(m.message||'Server error'))}};
+socket.onclose=()=>{id=null;players=[];seen=null;draw();schedule()};socket.onerror=()=>{try{socket.close()}catch{}}}
+function schedule(){if(stopped)return;clearTimeout(retryTimer);retryTimer=setTimeout(connect,delay);delay=Math.min(delay*2,30000)}
+badge.onclick=()=>{const btn=document.querySelector('#oceanDock button[data-tab="social"]');if(btn)btn.click()};
+document.getElementById('saveProfile')?.addEventListener('click',()=>setTimeout(()=>send({type:'profile',nick:nick(),avatar:avatar()}),30));
+window.addEventListener('pagehide',()=>{stopped=true;clearTimeout(retryTimer);socket?.close()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!socket||socket.readyState===3)){stopped=false;clearTimeout(retryTimer);connect()}});
+connect();
+})();
+</script>
 </body>
 </html>
