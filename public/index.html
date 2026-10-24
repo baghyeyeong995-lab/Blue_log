@@ -130,7 +130,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 <span class="pill" id="clock">⏱ 00:00</span>
 <span class="pill" id="phase">☀ 수면</span><span class="pill" id="rest">🩵 수면 휴식 00:00</span>
 </div>
-<div id="oceanJoystick" aria-label="이동 조이스틱"><div id="joyKnob">✣</div><small>이동</small></div><div id="verticalCtrl" aria-label="3D 전후 이동"><button id="joyAscend" type="button">↷ 앞으로</button><button id="joyDescend" type="button">↶ 뒤로</button></div><div class="gameControls"><button id="genter" class="primary">🤿 입수</button><button id="gsurface" class="primary">🌤 수면 복귀</button></div><button id="gcollect" class="warn nearbyCollect" style="display:none" aria-label="가까운 물건 줍기">🧺 줍기</button><div class="hint" id="hint">왼쪽 조이스틱으로 좌우·상승·하강 이동 · 3D는 오른쪽 버튼으로 앞/뒤 이동 · 10m 아래 자동 하강은 더 천천히 적용</div>
+<div id="oceanJoystick" aria-label="이동 조이스틱"><div id="joyKnob">✣</div><small>이동</small></div><div id="verticalCtrl" aria-label="3D 전후 이동"><button id="joyAscend" type="button">↷ 앞으로</button><button id="joyDescend" type="button">↶ 뒤로</button></div><div class="gameControls"><button id="genter" class="primary">🤿 입수</button><button id="gsurface" class="primary">🌤 수면 복귀</button></div><button id="gcollect" class="warn nearbyCollect" style="display:none" aria-label="가까운 물건 줍기">🧺 줍기</button><div class="hint" id="hint">2D 수면에서 좌우 이동·위아래로 앞뒤 수영 · 입수 후에는 상승·하강 · 3D는 오른쪽 버튼으로 앞뒤 이동</div>
 </div>
 <div class="row"><button id="photo" class="primary">📷 수중 사진 찍기</button><button id="albumBtn">🗂 내 사진 도감</button></div>
 <div class="panel" style="margin-top:8px"><h2>🧭 이동 & 탐색</h2>
@@ -278,6 +278,9 @@ const W=canvas.width,H=canvas.height,worldW=5600,worldH=3400,surfaceY=130;
 let idx=0,objects=[],corals=[],collectibles=[],phase='surface',session=false,elapsed=0,start=0,last=performance.now(),photos=[],records=[],seenRare=0;
 let diver={x:620,y:surfaceY-8,z:0.55,vx:0,vy:0,vz:0,dir:1,swim:0};
 let cam={x:0,y:0};
+// The surface has its own front/back swimming lane; underwater depth stays independent.
+let surfaceLane=0.45;
+function surfacePosition(){return {x:110+(diver.x-40)/(worldW-80)*(W-220),y:348+(surfaceLane-0.45)*145};}
 let inventory={abalone:0,hornShell:0,urchin:0,coin:0,total:0};
 let controls={left:false,right:false,up:false,down:false,forward:false,back:false};
 let pointerDown=null; let restStarted=performance.now(), restElapsed=0;
@@ -399,7 +402,7 @@ function spawnScene(){
   objects.push({key:sp,rare:true,x:rand(700,4000),y:rand(500,2200),baseY:rand(500,2200),size:sp==='ray'?92:sp==='sardine'?40:sp==='shark'?58:52,speed:sp==='ray'?0.2:0.28,seed:rand(0,999),z:rand(0.35,0.82)});
   if(sp==='sardine') for(let i=0;i<24;i++) objects.push({key:'sardine',rare:i===0,x:rand(1000,2200),y:rand(800,1450),baseY:rand(800,1450),size:16,speed:0.45,seed:rand(0,999),z:rand(0.4,0.72)});
   spawnCollectibles();
-  diver.x=620; diver.y=surfaceY-8; diver.z=0.55; diver.vx=0; diver.vy=0; diver.vz=0; cam.x=0; cam.y=0; elapsed=0; session=false; phase='surface'; startSurfaceRest(); updateHUD(); notify('새로운 바다에 도착했어요! 코인을 찾고, 암반 지역에서는 드물게 발견되는 전복·뿔소라도 탐색해 보세요.');
+  diver.x=620; diver.y=surfaceY-8; diver.z=0.55; surfaceLane=0.45; diver.vx=0; diver.vy=0; diver.vz=0; cam.x=0; cam.y=0; elapsed=0; session=false; phase='surface'; startSurfaceRest(); updateHUD(); notify('새로운 바다에 도착했어요! 코인을 찾고, 암반 지역에서는 드물게 발견되는 전복·뿔소라도 탐색해 보세요.');
 }
 spots.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.textContent=s.name;$('place').appendChild(o)});
 $('place').onchange=e=>{if(session)finishDive(); idx=+e.target.value; spawnScene(); updateAudio();};
@@ -723,7 +726,10 @@ function updatePlayer(dt){
       diver.vy+=sinkForce;
     } /* 중성 구간에서는 자동 침강 없음 */
   }
-  else {diver.vy += (surfaceY-8-diver.y)*.22;}
+  else {diver.vy += (surfaceY-8-diver.y)*.22;
+     // On the 2D surface, up/down swims away from or toward the viewer (not diving).
+     if(!is3DMove){if(controls.up)surfaceLane-=dt*.45;if(controls.down)surfaceLane+=dt*.45;surfaceLane=clamp(surfaceLane,0,1);}
+   }
   diver.vx*=0.92; diver.vy*=is3DMove?.65:.9; diver.vz*=0.88;
   diver.x=clamp(diver.x+diver.vx*dt*1.9,40,worldW-40);
   diver.z=clamp(diver.z+diver.vz*dt*3.2,0.18,0.95);
@@ -829,9 +835,9 @@ function drawSurface(t){
  const vessel=GEAR_CATALOG.find(g=>g.id===gearState.equipped.vessel);
  if(vessel){ctx.save();ctx.translate(720,355+Math.sin(t*.0019)*3);ctx.fillStyle='#eefcff';ctx.strokeStyle='#235c76';ctx.lineWidth=3;const large=vessel.id==='boat_cruise',yacht=vessel.id==='boat_yacht',ww=large?235:yacht?150:102;ctx.beginPath();ctx.moveTo(-ww/2,0);ctx.lineTo(ww/2,0);ctx.lineTo(ww*.34,26);ctx.lineTo(-ww*.37,26);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#d6ebf2';ctx.fillRect(-ww*.25,-(large?68:30),ww*.5,large?69:32);ctx.strokeRect(-ww*.25,-(large?68:30),ww*.5,large?69:32);if(yacht){ctx.strokeStyle='#eefcff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(5,-30);ctx.lineTo(5,-115);ctx.stroke();ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(7,-110);ctx.lineTo(70,-30);ctx.lineTo(7,-30);ctx.closePath();ctx.fill();}if(large){ctx.fillStyle='#28698b';for(let q=0;q<7;q++)ctx.fillRect(-66+q*21,-45,12,14)}ctx.restore();}
  // equipped game buoy on surface, separate from real-world safety equipment
- const buoyItem=GEAR_CATALOG.find(g=>g.id===gearState.equipped.buoy);if(buoyItem){ctx.save();ctx.translate(570,360+Math.sin(t*.002)*4);ctx.strokeStyle=buoyItem.color;ctx.lineWidth=16;ctx.beginPath();ctx.ellipse(0,0,33,17,0,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#f4ffff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-24,-12);ctx.lineTo(-14,-17);ctx.moveTo(17,13);ctx.lineTo(29,4);ctx.stroke();ctx.strokeStyle='#fff9';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-28,10);ctx.quadraticCurveTo(-63,25,-95,-7);ctx.stroke();ctx.restore();}
+ const buoyItem=GEAR_CATALOG.find(g=>g.id===gearState.equipped.buoy);if(buoyItem){ctx.save();ctx.translate(surfacePosition().x+92,surfacePosition().y+10+Math.sin(t*.002)*4);ctx.strokeStyle=buoyItem.color;ctx.lineWidth=16;ctx.beginPath();ctx.ellipse(0,0,33,17,0,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#f4ffff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-24,-12);ctx.lineTo(-14,-17);ctx.moveTo(17,13);ctx.lineTo(29,4);ctx.stroke();ctx.strokeStyle='#fff9';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-28,10);ctx.quadraticCurveTo(-63,25,-95,-7);ctx.stroke();ctx.restore();}
  // surface swimmer viewed from a slight distance, bobbing at the top of the water
- const bob=Math.sin(t*.002)*3;ctx.save();ctx.translate(460,350+bob);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
+ const bob=Math.sin(t*.002)*3;const sp=surfacePosition();ctx.save();ctx.translate(sp.x,sp.y+bob);ctx.scale(diver.dir,1);const surfaceHair=(gearState.equipped.gender==='male'&&!String(gearState.equipped['hair']||'').startsWith('hair_men_'))?'hair_short':(gearState.equipped['hair']||'hair_wavy');ctx.fillStyle=GEAR_CATALOG.find(g=>g.id===surfaceHair)?.color||'#3b2527';for(let i=0;i<(surfaceHair==='hair_short'||surfaceHair.startsWith('hair_men_')?0:10);i++){ctx.strokeStyle=i%2?'#3b2527':'#6a4441';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-15+i*3,-15);ctx.quadraticCurveTo(-24+i*4,0,-18+i*4,15);ctx.stroke();}
  const eq=gearState.equipped,item=(cat)=>GEAR_CATALOG.find(g=>g.id===eq[cat]);
  const outfit=item('outfit')?.color||(eq.outfit==='suit_mint'?'#64dbc6':eq.outfit==='swim_pink'?'#ff95be':eq.outfit==='swim_lilac'?'#bba1f5':'#111923');
  ctx.fillStyle=outfit;ctx.beginPath();ctx.ellipse(0,18,29,15,0,Math.PI,Math.PI*2);ctx.fill();
