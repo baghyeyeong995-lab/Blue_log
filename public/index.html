@@ -109,6 +109,14 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #settingsPanel input::placeholder,#settingsPanel textarea::placeholder{color:#627c8b;opacity:1}
 #settingsPanel select,#settingsPanel input:not([type=checkbox]),#settingsPanel textarea{color:#123d55 !important;background:#fff !important}
 </style>
+<style id="blRecordToastYellowFix">
+/* Explicitly override global light-theme button and panel rules. */
+#blDiveRecordToast{background:#ffdb32 !important;color:#27200a !important;border:2px solid #b17b00 !important;box-shadow:0 3px 13px rgba(49,32,0,.32) !important;opacity:1 !important;z-index:96 !important;}
+#blDiveRecordToast .blRecordTitle{color:#27200a !important;font-weight:900 !important;text-shadow:none !important}
+#blDiveRecordToast button.blRecordSave{background:#145b39 !important;color:#fff !important;border:1px solid #0e4229 !important}
+#blDiveRecordToast button.blRecordSkip{background:#fff4b9 !important;color:#473400 !important;border:1px solid #a67e17 !important}
+@media(max-width:760px){#blDiveRecordToast{top:105px !important;max-width:calc(100% - 20px) !important}}
+</style>
 <style id="blueChatStyles">
 #blueChat{position:fixed;right:12px;bottom:88px;width:min(325px,calc(100vw - 24px));max-height:45vh;z-index:105;display:flex;flex-direction:column;border:2px solid #61bbd9;border-radius:16px;background:#f0fbff;color:#173d59;box-shadow:0 8px 30px #07385c55;overflow:hidden;font-size:12px}
 #blueChat .blChatHead{display:flex;justify-content:space-between;align-items:center;background:#b5eaff;padding:6px 10px}#blueChat .blChatHead button{padding:4px 8px;font-size:11px}
@@ -200,7 +208,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 <div class="row"><input id="staSeconds" type="number" min="0" max="3600" step="1" placeholder="강사가 확인한 시간(초)" aria-label="강사가 확인한 스태틱 시간 초"></div>
 <div class="row"><input id="staCoach" maxlength="60" placeholder="감독자 / 강사 (선택)" aria-label="감독자 이름"><input id="staNote" maxlength="160" placeholder="컨디션·메모" aria-label="세션 메모"></div>
 <div class="row"><button id="staSave" class="primary">💾 세션 기록 저장</button><button id="staExport">↗ CSV 내보내기</button></div>
-<div id="staHistory" class="desc" aria-live="polite"></div>
+<div id="staHistory" class="desc" aria-live="polite"></div><button type="button" id="staDeleteAll" style="display:none;margin-top:9px;width:100%;background:#ffebe4;color:#952d20;border:1px solid #d88070">🗑 모든 스태틱 기록 삭제</button>
 </div>
 <div class="panel" id="onlinePanel"><h2>🌍 전 세계 프리다이버 접속 현황</h2><div class="stat"><span>실시간 접속자</span><b>서버 연결 전</b></div><p class="muted">다른 바다에 있는 플레이어의 수면/잠수 상태와 경과 시간을 표시하려면 온라인 서버가 필요해요. 현재는 다른 사용자를 가짜로 표시하지 않습니다.</p></div><div class="panel"><h2>🐠 오늘의 발견</h2>
 <div class="stat"><span>사진에 담은 생물</span><b id="collected">0종</b></div>
@@ -506,12 +514,12 @@ function offerDiveRecord(finished){
  // Non-blocking game overlay: never use window.confirm/alert for dive saves.
  toast.style.cssText='position:absolute;z-index:95;top:115px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 16px);background:#ffe16a;color:#3d2b07;border:1px solid #d9ad2f;box-shadow:0 3px 10px #2e330033;border-radius:10px;padding:5px 7px;display:flex;align-items:center;justify-content:center;gap:5px;pointer-events:none;font-size:11px';
  const label=document.createElement('span');
- label.textContent='⏱ '+finished.seconds+'초 · 스태틱 기록 저장?';
+ label.className='blRecordTitle';label.textContent='⏱ '+finished.seconds+'초 · 스태틱 기록 저장?';
  label.style.cssText='font-weight:850;white-space:nowrap;text-align:center';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:4px;pointer-events:auto;flex-shrink:0';
- const yes=document.createElement('button');yes.type='button';yes.textContent='저장';
+ const yes=document.createElement('button');yes.type='button';yes.className='blRecordSave';yes.textContent='저장';
  yes.style.cssText='padding:4px 7px;min-height:27px;background:#195c49;color:white;border:0;border-radius:8px;font-size:12px;font-weight:800';
- const no=document.createElement('button');no.type='button';no.textContent='닫기';
+ const no=document.createElement('button');no.type='button';no.className='blRecordSkip';no.textContent='닫기';
  no.style.cssText='padding:4px 7px;min-height:27px;background:#fff8c6;color:#453306;border:1px solid #bda443;border-radius:8px;font-size:12px;font-weight:800';
  actions.append(yes,no);toast.append(label,actions);game.appendChild(toast);
  yes.onclick=()=>{hideDiveRecordToast();records.push(finished.seconds);try{localStorage.setItem('blue_records',JSON.stringify(records))}catch(e){}logbook.push(finished);saveDiveLog();updateHUD();notify('이번 잠수 '+finished.seconds+'초를 기록에 저장했어요.')};
@@ -1157,21 +1165,45 @@ $('albumBtn').onclick=()=>{const unique=[...new Set(photos.map(p=>p.key))]; cons
 const STA_KEY='blue_sta_supervised_log_v1';
 let staEntries=[];
 try{let v=JSON.parse(localStorage.getItem(STA_KEY)||'[]');if(Array.isArray(v))staEntries=v;}catch(e){}
+function storeSTA(){
+ try{localStorage.setItem(STA_KEY,JSON.stringify(staEntries));}catch(e){alert('기록을 저장하지 못했어요.');return false;}
+ try{window.BlueLogSync?.syncSTA?.();}catch(e){}
+ return true;
+}
+function deleteStaItem(index){
+ const item=staEntries[index];if(!item)return;
+ if(!confirm('이 스태틱 기록 '+Math.round(Number(item.seconds)||0)+'초를 삭제할까요?'))return;
+ staEntries.splice(index,1);storeSTA();drawStaHistory();try{preview()}catch(e){}
+}
+function deleteAllSta(){
+ if(!staEntries.length)return;
+ if(!confirm('스태틱 기록 '+staEntries.length+'개를 모두 삭제할까요?'))return;
+ if(!confirm('정말 모든 스태틱 기록을 지우시겠습니까? 삭제하면 복구할 수 없습니다.'))return;
+ staEntries.length=0;storeSTA();drawStaHistory();try{preview()}catch(e){}
+}
 function drawStaHistory(){
- $('staHistory').replaceChildren();
- if(!staEntries.length){$('staHistory').textContent='아직 기록된 감독 세션이 없어요.';return;}
- staEntries.slice().reverse().slice(0,25).forEach(item=>{
- const a=document.createElement('article');
- a.textContent=`${new Date(item.at).toLocaleString('ko-KR')} · ${totalFormat(item.seconds)} · 감독자: ${item.coach||'미입력'} · ${item.note||''}`;
- $('staHistory').append(a);
+ const history=$('staHistory');history.replaceChildren();
+ $('staDeleteAll').style.display=staEntries.length?'block':'none';
+ if(!staEntries.length){history.textContent='아직 기록된 감독 세션이 없어요.';return;}
+ const stats=document.createElement('p');
+ const nums=staEntries.map(x=>Number(x.seconds)||0);
+ stats.textContent='총 '+nums.length+'회 · 최고 '+Math.max(...nums)+'초 · 평균 '+Math.round(nums.reduce((a,b)=>a+b,0)/nums.length)+'초';history.append(stats);
+ staEntries.map((item,index)=>({item,index})).reverse().forEach(({item,index})=>{
+  const a=document.createElement('article');a.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between';
+  const detail=document.createElement('span');detail.style.cssText='min-width:0;flex:1;overflow-wrap:anywhere';
+  detail.textContent=`${new Date(item.at).toLocaleString('ko-KR')} · ${totalFormat(item.seconds)} · 감독자: ${item.coach||'미입력'} · ${item.note||''}`;
+  const del=document.createElement('button');del.type='button';del.textContent='삭제';del.setAttribute('aria-label',`${item.seconds}초 기록 삭제`);
+  del.style.cssText='flex:none;background:#ffebe4;color:#952d20;padding:6px 9px;border:1px solid #d88070';del.onclick=()=>deleteStaItem(index);
+  a.append(detail,del);history.append(a);
  });
 }
+$('staDeleteAll').onclick=deleteAllSta;
 $('staSave').onclick=()=>{
  const seconds=Number($('staSeconds').value);
  if(!$('staSeconds').value||!Number.isInteger(seconds)||seconds<=0||seconds>3600){alert('감독하에 확인된 시간을 초 단위로 입력해 주세요.');return;}
  if(!confirm('훈련된 감독자가 직접 동반한 세션에서 측정한 기록인가요?'))return;
  staEntries.push({seconds,at:new Date().toISOString(),coach:$('staCoach').value.trim(),note:$('staNote').value.trim()});
- try{localStorage.setItem(STA_KEY,JSON.stringify(staEntries));}catch(e){alert('기기 저장공간에 기록을 저장하지 못했어요. CSV로 백업해 주세요.');}
+ storeSTA();
  $('staSeconds').value='';$('staNote').value='';drawStaHistory();
 };
 $('staExport').onclick=()=>{
@@ -2262,8 +2294,24 @@ const send=o=>{if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o))};
 const place=p=>String(p.spotName||('바다 '+(Number(p.spot)+1)))+' · '+(p.diving?'수중 '+(Number(p.depth)||0).toFixed(1)+'m':'수면');
 const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('place')?.value)||0;
 const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
-function statLog(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const x=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(x))return x}}catch{}return []}
+function statLog(){return Array.isArray(staEntries)?staEntries:[]}
 function syncSTA(){send({type:'sta',share:consent.checked,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
+function renderOwnStaControls(){
+ const box=document.getElementById('blProfileContent');if(!box||!me)return;
+ const section=document.createElement('section');section.style.cssText='margin-top:12px;padding:10px;border:1px solid #83c6d9;border-radius:10px';
+ const heading=document.createElement('strong');heading.textContent='🗒 내 스태틱 기록 관리';section.append(heading);
+ if(staEntries.length){
+ const all=document.createElement('button');all.type='button';all.textContent='🗑 전체 삭제';all.style.cssText='margin:8px 0;background:#ffe8e3;color:#922f25';
+ all.onclick=()=>{deleteAllSta();renderOwnStaControls()};section.append(all);
+ staEntries.map((item,index)=>({item,index})).reverse().forEach(({item,index})=>{
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid #b9dde8;padding:6px 0';
+  const detail=document.createElement('span');detail.textContent=`${Math.round(Number(item.seconds)||0)}초 · ${new Date(item.at).toLocaleDateString('ko-KR')}`;
+  const del=document.createElement('button');del.type='button';del.textContent='삭제';del.onclick=()=>{deleteStaItem(index);renderOwnStaControls()};
+  row.append(detail,del);section.append(row);
+ });
+ }else{const empty=document.createElement('p');empty.textContent='저장된 기록이 없어요.';section.append(empty)}
+ box.querySelector('#blOwnStaControls')?.remove();section.id='blOwnStaControls';box.append(section);
+}
 function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
@@ -2297,7 +2345,7 @@ function start(){clearTimeout(reconnect);const proto=location.protocol==='https:
  if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel();chatRoster()}
   if(m.type==='chat'){chatLine(m)}
   if(m.type==='chat_error'){chatLine({fromNick:'안내',text:m.message||'메시지를 보낼 수 없어요.'})}
- if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}}
+ if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}if(m.id===me)renderOwnStaControls()}
  };
  ws.onclose=()=>{me=null;players=[];updatePanel();reconnect=setTimeout(start,delay);delay=Math.min(30000,delay*2)};ws.onerror=()=>{try{ws.close()}catch{}};
 }
@@ -2305,7 +2353,7 @@ const tick=setInterval(()=>{if(ws?.readyState!==1)return;
  const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'바다':'바다',x:q.x,y:q.y,z:q.z,dir:q.dir,swim:q.swim,navX:window.BL3DCamera?.x||0,navZ:window.BL3DCamera?.z||0,yaw:window.BL3DCamera?.yaw||0,diving:d.diving,depth:d.depth});
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
-window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect};
+window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA};
 function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
