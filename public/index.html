@@ -836,8 +836,8 @@ function drawSurface(t){
  ctx.strokeStyle=item('snorkel')?.color||'#fff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(17,-20);ctx.lineTo(29,-35);ctx.lineTo(29,-52);ctx.stroke();ctx.restore();
  ctx.fillStyle='#eaffffd9';ctx.font='bold 22px system-ui';ctx.fillText('☀️ 수면 위에서 쉬는 중',34,510);ctx.font='18px system-ui';ctx.fillText('휴식 '+fmt(restElapsed)+'  ·  다시 입수하면 새 잠수가 시작돼요',34,540);ctx.fillText('지금까지 수집 '+inventory.total+'개  (전복 '+inventory.abalone+' · 뿔소라 '+inventory.hornShell+' · 성게 '+(inventory.urchin||0)+' · 코인 '+inventory.coin+')',34,570);
 }
-let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean-tab-open')){last=ts;requestAnimationFrame(render);return;}if(ts-last2DFrame<33){requestAnimationFrame(render);return;}last2DFrame=ts; const dt=Math.min(.05,(ts-last)/1000||0); last=ts; if(session) elapsed=(performance.now()-start)/1000; else restElapsed=Math.max(0,(Date.now()-restStartedWall)/1000); updatePlayer(dt); updateEntities(dt); checkGameAlarms(); if(!session){updateCollectButton();drawSurface(ts);window.visibleEntities=[];updateHUD();updateAudio();requestAnimationFrame(render);return;} drawBackground(ts); drawTerrain(ts); draw2DExplorationSpot(ts); draw2DSeaCave(ts); drawBubbles(ts);
-  const visible=[]; const layers=[]; for(const c of collectibles){ const r=drawCollectible(c,ts); if(r) layers.push({z:c.z||0.5,fn:null,data:r}); } for(const o of objects){ const hit=drawFish(o,ts); if(hit) visible.push(hit);} window.visibleEntities=visible; drawDiver(ts);drawPetCompanion(ts);autoPetCollect(ts);updateCollectButton();
+let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean-tab-open')){last=ts;requestAnimationFrame(render);return;}if(ts-last2DFrame<33){requestAnimationFrame(render);return;}last2DFrame=ts; const dt=Math.min(.05,(ts-last)/1000||0); last=ts; if(session) elapsed=(performance.now()-start)/1000; else restElapsed=Math.max(0,(Date.now()-restStartedWall)/1000); updatePlayer(dt); updateEntities(dt); checkGameAlarms(); if(!session){updateCollectButton();drawSurface(ts);window.BlueLogSync?.draw2D(ts);window.visibleEntities=[];updateHUD();updateAudio();requestAnimationFrame(render);return;} drawBackground(ts); drawTerrain(ts); draw2DExplorationSpot(ts); draw2DSeaCave(ts); drawBubbles(ts);
+  const visible=[]; const layers=[]; for(const c of collectibles){ const r=drawCollectible(c,ts); if(r) layers.push({z:c.z||0.5,fn:null,data:r}); } for(const o of objects){ const hit=drawFish(o,ts); if(hit) visible.push(hit);} window.visibleEntities=visible; drawDiver(ts);window.BlueLogSync?.draw2D(ts);drawPetCompanion(ts);autoPetCollect(ts);updateCollectButton();
   const d=depthMeters(); if(d>0){ ctx.fillStyle=`rgba(0,25,48,${clamp(d/80,0,.36)})`; ctx.fillRect(0,0,W,H);} if(d>10){ ctx.fillStyle=`rgba(0,12,28,${clamp((d-10)/60,0,.14)})`; ctx.fillRect(0,0,W,H);} updateHUD(); updateAudio(); requestAnimationFrame(render); }
 
 canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY}});
@@ -1352,7 +1352,36 @@ spawnScene(); requestAnimationFrame(render);
  birds.forEach((b,i)=>{b.visible=!dive;b.position.x+=dt*(i%2?1.4:-1.2);if(Math.abs(b.position.x)>100)b.position.x=-Math.sign(b.position.x)*95;b.position.y+=Math.sin(tick*1.2+i)*dt*.45;});
  flying.forEach((f,i)=>{f.visible=!dive;const cycle=(tick*.55+i*.17)%1;f.visible=!dive&&cycle<.62;f.position.y=.35+Math.sin(Math.min(1,cycle/.62)*Math.PI)*5;f.position.x+=dt*7.4;f.rotation.z=Math.sin(cycle*Math.PI*2)*.20;if(f.position.x>85)f.position.x=-85;});
  sea.material.opacity=dive?.025:.86;sea.position.y=Math.sin(tick*.9)*.13;
- if(status)status.textContent='📍 '+spots[idx].name+(dive?' · 수중 '+m.toFixed(1)+'m · '+(m>30?'심해 수역':m>12?'중층':'얕은 바다'):' · 수면 위 · 지역별 3D 랜드마크');renderer.render(scene,camera);}
+ if(status)status.textContent='📍 '+spots[idx].name+(dive?' · 수중 '+m.toFixed(1)+'m · '+(m>30?'심해 수역':m>12?'중층':'얕은 바다'):' · 수면 위 · 지역별 3D 랜드마크');window.BlueLog3DPosition=window.BlueLog3DPosition||{};
+const peers=window.BlueLogSync?.getPlayers?.()||[];
+const otherMeshes=scene.userData.blueRemoteMeshes||(scene.userData.blueRemoteMeshes=new Map());
+const remoteGearColor=(id,fallback)=>{const entry=(typeof GEAR_CATALOG!=='undefined'?GEAR_CATALOG:[]).find(g=>g.id===id);if(entry?.color)return entry.color;return fallback};
+for(const rp of peers){
+ let group=otherMeshes.get(rp.id),equipped=rp.equipped||{},key=JSON.stringify(equipped);
+ if(!group){group=new T.Group();group.userData.version='';scene.add(group);otherMeshes.set(rp.id,group)}
+ if(group.userData.version!==key){
+  while(group.children.length){const child=group.children[0];group.remove(child);child.geometry?.dispose?.();child.material?.dispose?.()}
+  const outfit=remoteGearColor(equipped.outfit,'#182e42'),fins=remoteGearColor(equipped.fins,'#e5fbff'),mask=remoteGearColor(equipped.mask,'#f5ffff'),headwear=remoteGearColor(equipped.headwear,'#36242d');
+  const add=(geometry,col,x,y,z)=>{const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color:col,roughness:.7}));mesh.position.set(x,y,z);group.add(mesh);return mesh};
+  add(new T.CapsuleGeometry(.62,1.35,4,8),outfit,0,0,0);
+  add(new T.SphereGeometry(.46,12,9),'#eec09b',0,1.38,0);
+  add(new T.SphereGeometry(.49,12,8),headwear,0,1.65,-.02);
+  add(new T.BoxGeometry(.84,.26,.30),mask,0,1.44,.40);
+  for(const sign of [-1,1]){
+   add(new T.CapsuleGeometry(.17,.65,3,6),outfit,sign*.81,-.12,0).rotation.z=sign*.42;
+   add(new T.CapsuleGeometry(.19,.80,3,6),outfit,sign*.30,-1.50,0);
+   add(new T.BoxGeometry(.36,.1,.85),fins,sign*.31,-2.12,.31);
+  }
+  group.userData.version=key;
+ }
+ const remoteDepth=Math.max(0,Number(rp.depth)||0),remoteX=(Number(rp.x)||620)-620;
+ group.position.set(remoteX*.05*1.45,(rp.diving?-remoteDepth*95:4.4),-12);
+ group.visible=true;
+ const proj=group.position.clone().project(camera),vw=view.clientWidth,vh=view.clientHeight;
+ window.BlueLog3DPosition[rp.id]=(proj.z>=-1&&proj.z<=1)?{x:(proj.x+1)*vw/2+(view.offsetLeft||0),y:(1-proj.y)*vh/2+(view.offsetTop||0)}:null;
+}
+for(const [id,mesh] of otherMeshes){if(!peers.some(p=>p.id===id)){scene.remove(mesh);otherMeshes.delete(id);delete window.BlueLog3DPosition[id]}}
+renderer.render(scene,camera);}
  requestAnimationFrame(loop);
  button.addEventListener('click',()=>{if(active){active=false;const p=document.getElementById('threePhotoPoint');if(p)p.style.display='none';view.hidden=true;game.classList.remove('is3d');button.textContent='🌐 3D 보기';status.hidden=true;return;}try{if(!built)make();active=true;view.hidden=false;game.classList.add('is3d');button.textContent='↩ 2D 보기';status.hidden=true;resize();}catch(e){active=false;view.hidden=true;game.classList.remove('is3d');status.hidden=true;alert('3D를 시작할 수 없어요: '+e.message)}});
 })();
@@ -1682,56 +1711,80 @@ translateOptions();
 </script>
 
 
-<!-- BLUE LOG MULTIPLAYER v4 -->
+<!-- BLUE LOG MULTIPLAYER v5 -->
 <style>
-#blueLiveBadge{position:fixed!important;left:10px!important;right:auto!important;top:auto!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;z-index:89!important;background:#e9faff!important;color:#075270!important;border:1px solid #49b6da!important;max-width:50vw!important;border-radius:50px!important;padding:7px 10px!important;font-size:11px!important;font-weight:800!important;box-shadow:0 2px 9px #00364b45!important}
-#blueLiveToast{position:fixed!important;left:12px!important;right:auto!important;top:auto!important;bottom:calc(135px + env(safe-area-inset-bottom))!important;z-index:95!important;max-width:80vw!important;background:#006c98ef!important;color:white!important;border-radius:12px!important;padding:9px 12px!important;opacity:0;pointer-events:none}
-#blueLiveToast.show{opacity:1!important}
-#blueRemoteLayer{position:absolute;inset:0;z-index:8;pointer-events:none}
-.blueRemote{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;display:flex;align-items:center;flex-direction:column;gap:1px;border:0!important;background:transparent!important;padding:0!important;filter:drop-shadow(0 3px 4px #00203399)}
-.blueRemote svg{width:55px;height:90px;overflow:visible}.blueRemote span{font:800 11px system-ui;background:#eaffffed;color:#07516c;border-radius:14px;padding:3px 7px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#blueProfileCard{position:fixed;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);width:min(370px,92vw);background:#eefbff;color:#15465c;border:2px solid #74c7df;padding:18px;border-radius:20px;box-shadow:0 14px 55px #002b4099;display:none;font:14px system-ui}
-#blueProfileCard.show{display:block}#blueProfileCard .close{float:right}#blueProfileCard p{margin:8px 0;line-height:1.6}
-#blueShareSTA{display:flex;gap:8px;align-items:center;font-size:12px;margin:10px 0}
-@media(max-width:760px){#blueLiveBadge{bottom:calc(88px + env(safe-area-inset-bottom))!important}.blueRemote svg{width:44px;height:72px}}
+#blueLiveBadge{position:fixed;left:12px;bottom:calc(91px + env(safe-area-inset-bottom));z-index:91;border-radius:20px;padding:7px 13px;background:#edffff;color:#12566c;border:1px solid #76cadb;font:bold 12px system-ui;box-shadow:0 4px 11px #05465b33}
+#blRemoteTouch{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden}
+.blRemoteHit{position:absolute;transform:translate(-50%,-50%);width:80px;height:112px;pointer-events:auto;border:0;background:transparent;cursor:pointer}
+.blRemoteHit .blLabel{position:absolute;left:50%;bottom:0;transform:translateX(-50%);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;background:#e7ffffec;color:#06344e;border:1px solid #8fcddb;border-radius:15px;padding:4px 8px;font:bold 11px system-ui;box-shadow:0 2px 7px #003c5a66}
+#blRemoteTouch.three .blRemoteHit{height:94px}
+#blProfile{display:none;position:fixed;z-index:150;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,90vw);max-height:75vh;overflow:auto;padding:18px;background:#edfdff;border:2px solid #71c4d5;border-radius:19px;box-shadow:0 17px 60px #002b5588;color:#164c64;font:14px system-ui}
+#blProfile.open{display:block}#blProfile button{float:right;border:0;border-radius:9px;background:#a6eaff;padding:7px 11px}
+#blRemoteList>button{display:block;width:100%;padding:9px;margin-top:6px;text-align:left}
+#blShare{font:12px system-ui;display:flex;align-items:center;gap:6px;margin-top:12px}
 </style>
 <script>
-(()=>{
+(function(){
 'use strict';
 const game=document.querySelector('.game'),panel=document.getElementById('onlinePanel');if(!game||!panel)return;
-for(const id of ['blueLiveBadge','blueLiveToast','blueRemoteLayer','blueLiveList'])document.getElementById(id)?.remove();
-const badge=document.createElement('button');badge.id='blueLiveBadge';badge.type='button';badge.textContent='⚪ 서버 연결 중';
-const toast=document.createElement('div');toast.id='blueLiveToast';toast.setAttribute('role','status');
-const layer=document.createElement('div');layer.id='blueRemoteLayer';game.append(layer);document.body.append(badge,toast);
-const card=document.createElement('div');card.id='blueProfileCard';card.innerHTML='<button type="button" class="close">✕</button><h3>🤿 다이버 프로필</h3><div id="blueProfileBody">불러오는 중…</div>';document.body.append(card);card.querySelector('.close').onclick=()=>card.classList.remove('show');
-const count=panel.querySelector('.stat b'),detail=panel.querySelector('p.muted'),list=document.createElement('div');list.id='blueLiveList';panel.append(list);
-const shareLine=document.createElement('label');shareLine.id='blueShareSTA';shareLine.innerHTML='<input type="checkbox" id="blueShareSTACheck"> 다른 다이버에게 내 스태틱 기록 공개';panel.append(shareLine);
-const consent=shareLine.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
-let ws=null,me=null,players=[],prev=null,wait=1200,toastTimer,heartbeat,connected=false;
-const key='blue_log_live_token_v1';
-function gear(){try{return JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}').equipped||{}}catch{return {}}}
-function nick(){try{return String(JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}').nickname||'바다 탐험가').slice(0,16)||'바다 탐험가'}catch{return '바다 탐험가'}}
-function avatar(){return 0}
-function send(m){if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(m))}
-function note(s){toast.textContent=s;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),3600)}
-function spot(){const e=document.getElementById('place');return e?Math.max(0,Number(e.value)||e.selectedIndex||0):0}
-function spotName(){const e=document.getElementById('place');const option=e?.selectedOptions?.[0];return (option?.textContent||document.getElementById('where')?.textContent||'알 수 없는 바다').replace('📍','').trim().slice(0,60)}
-function diveStatus(){const d=document.getElementById('depth')?.textContent||'0';const n=Number((d.match(/[0-9]+(?:[.][0-9]+)?/)||[])[0]||0);const phase=document.getElementById('phase')?.textContent||'';const submerged=n>=0.5||(/잠수|하강|상승|수중/.test(phase)&&!/수면/.test(phase));return {diving:submerged,depth:submerged?Math.round(n*10)/10:0}}
-function staRows(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const raw=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(raw))return raw}}catch{}return []}
-function syncSTA(){send({type:'sta',share:consent.checked,log:staRows().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
-function color(v,def){return /^#[0-9a-f]{6}$/i.test(v||'')?v:def}
-const GEAR={suit_black:'#162334',suit_mint:'#64dbc6',swim_pink:'#ff95be',swim_lilac:'#bba1f5'};
-function diverSVG(p){const e=p.equipped||{};const outfit=GEAR[e.outfit]||(['mint','pink','lilac','blue','black'].find(k=>String(e.outfit||'').includes(k))==='mint'?'#64dbc6':'#263a55');const hair=String(e.hair||'');const fin=String(e.fins||'').includes('pink')?'#ff95be':String(e.fins||'').includes('black')?'#111827':'#d7f5ff';const mask=String(e.mask||'').includes('black')?'#17283a':'#f4ffff';return '<svg viewBox="0 0 72 108" xmlns="http://www.w3.org/2000/svg"><path d="M28 77L20 101 7 105 24 100 32 86M42 77L52 101 65 105 48 100 39 86" stroke="'+fin+'" stroke-width="10" stroke-linecap="round" fill="none"/><path d="M25 43Q19 57 22 78L33 83 35 69 39 83 51 77Q52 52 45 43Z" fill="'+outfit+'" stroke="#133748" stroke-width="2"/><path d="M26 47L12 66 M46 47L60 66" stroke="'+outfit+'" stroke-width="10" stroke-linecap="round"/><ellipse cx="35" cy="25" rx="18" ry="21" fill="#f2cfb8"/><path d="M16 21Q16 '+(hair.includes('short')?'12':'2')+' 36 4Q58 8 54 25" stroke="#38252c" stroke-width="9" fill="none"/><rect x="16" y="23" width="39" height="14" rx="7" fill="'+mask+'" stroke="#0e526d" stroke-width="2"/><rect x="21" y="26" width="29" height="7" rx="3" fill="#65aec5"/><path d="M53 30L64 22V8" stroke="#fff" stroke-width="4" fill="none"/></svg>'}
-function showProfile(id){const p=players.find(x=>x.id===id);card.classList.add('show');const body=document.getElementById('blueProfileBody');body.textContent=(p?.nick||'다이버')+' · 기록 조회 중…';send({type:'inspect',id})}
-function presence(p){const place=String(p.spotName||('바다 '+(Number(p.spot)+1)));const depth=Number(p.depth)||0;return '📍 '+place+' · '+(p.diving?'🌊 수중 '+depth.toFixed(1)+'m':'☀ 수면')}
-function draw(){const ready=connected&&me!==null;badge.textContent=ready?'🟢 '+players.length+'명 접속 중':'⚪ 서버 연결 중';if(count)count.textContent=ready?players.length+'명 접속 중':'서버 연결 중…';if(detail)detail.textContent='모든 접속자의 바다 위치와 수면·수중 상태, 깊이를 실시간으로 표시합니다. 캐릭터를 누르면 프로필을 볼 수 있어요.';layer.replaceChildren();list.replaceChildren();const same=players.filter(p=>p.id!==me&&Number(p.spot)===spot());same.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.className='blueRemote';b.style.left=((i+1)/(same.length+1)*95)+'%';b.style.top=(p.diving?'65%':'46%');b.innerHTML=diverSVG(p)+'<span></span>';b.querySelector('span').textContent=p.nick+' · '+(p.diving?'수중 '+(Number(p.depth)||0).toFixed(1)+'m':'수면');b.title=presence(p);b.onclick=()=>showProfile(p.id);layer.append(b)});players.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent='🤿 '+p.nick+(p.id===me?' (나)':'')+' · '+presence(p)+' · 프로필';b.style.cssText='width:100%;margin-top:6px;text-align:left';b.onclick=()=>showProfile(p.id);list.append(b)})}
-function connect(){connected=false;me=null;prev=null;players=[];draw();const prot=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(prot+'//'+location.host+'/')}catch{setTimeout(connect,wait);return}ws.onopen=()=>{connected=true;wait=1200;send({type:'hello',nick:nick(),avatar:avatar(),equipped:gear(),token:localStorage.getItem(key)||''});syncSTA()};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();draw()}else if(m.type==='players'){const next=(m.players||[]).filter(p=>p&&p.id);if(prev){for(const p of next)if(p.id!==me&&!prev.has(p.id))note('🤿 '+p.nick+'님 입장!');for(const p of players)if(p.id!==me&&!next.some(q=>q.id===p.id))note('👋 '+p.nick+'님 퇴장')}players=next;prev=new Set(next.map(p=>p.id));draw()}else if(m.type==='inspect'){const s=m.stats||{},t=m.sta;document.getElementById('blueProfileBody').textContent='';const target=document.getElementById('blueProfileBody');const h=document.createElement('p');h.textContent='닉네임: '+m.nick;target.append(h);const current=players.find(p=>p.id===m.id);if(current){const whereabouts=document.createElement('p');whereabouts.textContent='현재 위치: '+presence(current);target.append(whereabouts)}const eq=document.createElement('p');eq.textContent='착용 장비: '+(Object.values(m.equipped||{}).join(', ')||'기본 장비');target.append(eq);const d=document.createElement('p');d.textContent='시뮬레이션 잠수: '+(s.dives||0)+'회 / 평균 '+(s.average||0)+'초 / 최장 '+(s.longest||0)+'초';target.append(d);const st=document.createElement('p');st.textContent=t?'스태틱(STA): '+t.count+'회 / 평균 '+t.average+'초 / 최고 '+t.best+'초'+(t.recent?' / 최근 '+t.recent:''):'스태틱 기록: 비공개';target.append(st)}else if(m.type==='error')note(m.message||'연결 오류')};ws.onclose=()=>{connected=false;me=null;players=[];draw();setTimeout(connect,wait);wait=Math.min(wait*2,30000)};ws.onerror=()=>ws.close()}
+for(const id of ['blueLiveBadge','blueLiveToast','blueRemoteLayer','blueLiveList','blueProfileCard','blueShareSTA','blRemoteTouch','blProfile','blRemoteList','blShare'])document.getElementById(id)?.remove();
+const badge=document.createElement('button');badge.id='blueLiveBadge';badge.textContent='âª ìë² ì°ê²° ì¤';document.body.append(badge);
+const layer=document.createElement('div');layer.id='blRemoteTouch';game.append(layer);
+const modal=document.createElement('div');modal.id='blProfile';modal.innerHTML='<button type="button" id="blClose">ë«ê¸° â</button><h3>ð¤¿ ë¤ì´ë² íë¡í</h3><div id="blProfileContent"></div>';document.body.append(modal);document.getElementById('blClose').onclick=()=>modal.classList.remove('open');
+const list=document.createElement('div');list.id='blRemoteList';panel.append(list);
+const label=document.createElement('label');label.id='blShare';label.innerHTML='<input type="checkbox"> ì¤íí±(STA) ê¸°ë¡ì ë¤ë¥¸ ë¤ì´ë²ìê² ê³µê°';panel.append(label);
+const consent=label.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
+const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
+const gear=()=>{try{return JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}').equipped||{}}catch{return {}}};
+const nick=()=>String(document.getElementById('diverNickname')?.value||'ë°ë¤ ííê°').trim().slice(0,16)||'ë°ë¤ ííê°';
+const send=o=>{if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o))};
+const place=p=>String(p.spotName||('ë°ë¤ '+(Number(p.spot)+1)))+' Â· '+(p.diving?'ìì¤ '+(Number(p.depth)||0).toFixed(1)+'m':'ìë©´');
+const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('place')?.value)||0;
+const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
+function statLog(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const x=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(x))return x}}catch{}return []}
+function syncSTA(){send({type:'sta',share:consent.checked,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
+function inspect(id){const p=players.find(q=>q.id===id);modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'ë¤ì´ë²')+' Â· ê¸°ë¡ ì¡°í ì¤';send({type:'inspect',id})}
+const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
+function display2D(t){
+ if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
+ const own=diver,ownEq=gearState.equipped;
+ for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
+   const q=coords(p);
+   try{diver={...own,x:q.x,y:q.y,z:q.z,dir:q.x<own.x?-1:1,swim:Math.sin(t/220)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
+ }
+}
+const clickTargets=new Map();
+function updateHitTargets(){
+ const current=new Set();const three=game.classList.contains('is3d');layer.classList.toggle('three',three);
+ for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
+  current.add(p.id);let el=clickTargets.get(p.id);if(!el){el=document.createElement('button');el.type='button';el.className='blRemoteHit';el.innerHTML='<span class="blLabel"></span>';el.onclick=()=>inspect(p.id);layer.append(el);clickTargets.set(p.id,el)}
+  el.querySelector('span').textContent=p.nick;let pos=null;
+  if(three){pos=window.BlueLog3DPosition?.[p.id]||null;}else if(typeof worldToScreen==='function'){
+    const q=coords(p),a=worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
+    if(c)pos={x:(a.x/c.width)*(c.clientWidth||game.clientWidth)+(c.offsetLeft||0),y:(a.y/c.height)*(c.clientHeight||game.clientHeight)+(c.offsetTop||0)};
+  }
+  if(pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&pos.x>=0&&pos.x<=game.clientWidth&&pos.y>=0&&pos.y<=game.clientHeight){el.style.display='block';el.style.left=pos.x+'px';el.style.top=pos.y+'px'}else{el.style.display='none'}
+ }
+ for(const [id,el] of clickTargets){if(!current.has(id)){el.remove();clickTargets.delete(id)}}
+}
+function updatePanel(){badge.textContent=me?'ð¢ '+players.length+'ëª ì ì ì¤':'âª ìë² ì°ê²° ì¤';const count=panel.querySelector('.stat b');if(count)count.textContent=me?players.length+'ëª ì ì ì¤':'ì°ê²° ì¤';list.replaceChildren();for(const p of players){const b=document.createElement('button');b.textContent='ð¤¿ '+p.nick+(p.id===me?' (ë)':'')+' Â· '+place(p);b.onclick=()=>inspect(p.id);list.append(b)}}
+function start(){clearTimeout(reconnect);const proto=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(proto+'//'+location.host+'/')}catch{reconnect=setTimeout(start,delay);return}
+ ws.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:0,equipped:gear(),token:localStorage.getItem(key)||''})};
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
+ if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();updatePanel()}
+ if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel()}
+ if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['ëë¤ì',m.nick||'ë¤ì´ë²'],['íì¬ ìì¹',p?place(p):'ì¤íë¼ì¸'],['ì°©ì© ì¥ë¹',Object.values(m.equipped||{}).join(' Â· ')||'ê¸°ë³¸ ì¥ë¹'],['ì ì ì°ìµ',String(m.stats?.dives||0)+'í / íê·  '+(m.stats?.average||0)+'ì´ / ìµì¥ '+(m.stats?.longest||0)+'ì´'],['ì¤íí±(STA)',m.sta?'ìµê³  '+m.sta.best+'ì´ Â· íê·  '+m.sta.average+'ì´ Â· '+m.sta.count+'í':'ë¹ê³µê°']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}}
+ };
+ ws.onclose=()=>{me=null;players=[];updatePanel();reconnect=setTimeout(start,delay);delay=Math.min(30000,delay*2)};ws.onerror=()=>{try{ws.close()}catch{}};
+}
+const tick=setInterval(()=>{if(ws?.readyState!==1)return;
+ const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'ë°ë¤':'ë°ë¤',x:q.x,y:q.y,z:q.z,diving:d.diving,depth:d.depth});
+ const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
+},250);
+window.BlueLogSync={draw2D:display2D,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect};
+function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
-let lastGear='';heartbeat=setInterval(()=>{if(ws?.readyState!==1)return;const e=JSON.stringify(gear());if(lastGear!==e){lastGear=e;send({type:'appearance',avatar:avatar(),equipped:gear()})}send({type:'move',spot:spot(),spotName:spotName(),x:620,y:122,z:0.55,...diveStatus()});},800);
-document.getElementById('place')?.addEventListener('change',draw);
-document.getElementById('saveProfile')?.addEventListener('click',()=>setTimeout(()=>send({type:'profile',nick:nick()}),50));
-document.getElementById('staSave')?.addEventListener('click',()=>setTimeout(syncSTA,150));
-window.addEventListener('pagehide',()=>{clearInterval(heartbeat);ws?.close()});connect();
+window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
 })();
 </script>
 </body>
