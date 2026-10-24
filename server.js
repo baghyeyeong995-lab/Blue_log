@@ -21,7 +21,23 @@ const profile=profiles[id]||{log:[],sta:[],shareSta:false};profile.nick=m.nick.t
 sessions.set(ws,{id,nick:profile.nick,avatar:profile.avatar,equipped:profile.equipped,spot:0,spotName:'바다 선택 중',depth:0,x:620,y:122,z:.55,diving:false,dir:1,swim:0,navX:0,navZ:0,yaw:0});send(ws,{type:'welcome',id,token,profile:{nick:profile.nick,avatar:profile.avatar,equipped:profile.equipped},stats:aggregate(profile.log)});saveSoon();broadcast();return}
 const s=sessions.get(ws);if(!s)return;
 if(m.type==='move'){s.spot=Math.max(0,Math.min(10,Math.round(Number(m.spot)||0)));s.x=Math.max(0,Math.min(5600,Number(m.x)||620));s.y=Math.max(0,Math.min(3400,Number(m.y)||122));s.z=Math.max(.18,Math.min(.95,Number(m.z)||.55));s.diving=!!m.diving;s.depth=s.diving?Math.max(0,Math.min(150,Number(m.depth)||0)):0;/* BLV6_MOVEMENT */s.dir=Number(m.dir)<0?-1:1;s.swim=Math.max(0,Math.min(1000000,Number(m.swim)||0));s.navX=Math.max(-205,Math.min(205,Number(m.navX)||0));s.navZ=Math.max(-205,Math.min(205,Number(m.navZ)||0));s.yaw=Math.max(-6.3,Math.min(6.3,Number(m.yaw)||0));s.spotName=String(m.spotName||'바다 선택 중').slice(0,60);return}
-if(m.type==='appearance'){const a=validAppearance(m);s.avatar=a.avatar;s.equipped=a.equipped;profiles[s.id].avatar=a.avatar;profiles[s.id].equipped=a.equipped;saveSoon();broadcast();return}
+if(m.type==='chat'){
+ const message=typeof m.text==='string'?m.text.trim().slice(0,220):'';
+ if(!message)return;
+ const to=typeof m.to==='string'?m.to.trim():'';
+ const payload={type:'chat',fromNick:s.nick,fromId:s.id,text:message,private:!!to};
+ if(to){
+  const target=[...sessions].find(([,p])=>p.id===to);
+  if(!target)return send(ws,{type:'chat_error',message:'상대방이 접속 중이지 않아요.'});
+  send(ws,payload);
+  if(target[0]!==ws)send(target[0],payload);
+ }else{
+  for(const [client,p] of sessions){
+   if(p.spot===s.spot)send(client,payload);
+  }
+ }
+ return;
+}if(m.type==='appearance'){const a=validAppearance(m);s.avatar=a.avatar;s.equipped=a.equipped;profiles[s.id].avatar=a.avatar;profiles[s.id].equipped=a.equipped;saveSoon();broadcast();return}
 if(m.type==='profile'&&validName(m.nick)){s.nick=m.nick.trim();profiles[s.id].nick=s.nick;saveSoon();broadcast();return}
 if(m.type==='record'&&Array.isArray(m.log)){profiles[s.id].log=m.log.slice(-150);saveSoon();send(ws,{type:'saved',stats:aggregate(profiles[s.id].log)});return}
 if(m.type==='sta'&&Array.isArray(m.log)){profiles[s.id].sta=m.log.slice(-150).map(v=>({seconds:Number(v.seconds)||0,at:String(v.at||v.date||'').slice(0,40)}));profiles[s.id].shareSta=m.share===true;saveSoon();return}
