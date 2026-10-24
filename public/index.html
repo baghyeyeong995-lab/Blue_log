@@ -119,7 +119,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #blueChat small{padding:3px 8px 7px;color:#436778}#blueChat.collapsed .blChatTarget,#blueChat.collapsed #blChatMessages,#blueChat.collapsed #blChatForm,#blueChat.collapsed small{display:none}
 @media(max-width:760px){#blueChat{right:8px;bottom:calc(75px + env(safe-area-inset-bottom));width:min(290px,calc(100vw - 16px));max-height:42vh}#blueChat.collapsed{width:auto}}
 </style>
-<meta name="blue-log-maintenance-version" content="v49.0-mauritius-3d-fauna"></head>
+<meta name="blue-log-maintenance-version" content="v50.0-multiplayer-world-and-jeju-statue"></head>
 <body>
 <div class="shell">
 <header>
@@ -638,7 +638,7 @@ const REGIONAL_2D_SPOTS=[
   {x:1070,dy:440,type:'wreck',tone:'#617b7c'},        // Saipan Managaha
   {x:1760,dy:590,type:'reefGarden',tone:'#a79070'},   // Saipan Kensington
   {x:1190,dy:780,type:'grotto',tone:'#304c55'},       // Grotto underwater cave
-  {x:1440,dy:510,type:'dolhareubang',tone:'#384b4f'}, // Beomseom easter egg
+  {x:1440,dy:0,type:'dolhareubang',tone:'#384b4f'}, // Beomseom seafloor basalt statue
   {x:2050,dy:690,type:'basalt',tone:'#354b50'},       // Jeju Conan basalt terrace
   {x:970,dy:620,type:'tetrapod',tone:'#63757b'},      // Ulleung Hakpo
   {x:1740,dy:760,type:'arch',tone:'#38505d'},        // Wadalri tunnel
@@ -652,7 +652,7 @@ const REGIONAL_2D_SPOTS=[
 function draw2DExplorationSpot(t){
  if(!session)return;
  const spot=REGIONAL_2D_SPOTS[idx];if(!spot)return;
- const p=worldToScreen(spot.x,surfaceY+spot.dy);
+ const p=worldToScreen(spot.x,spot.type==='dolhareubang'?seabedAt(spot.x)-12:surfaceY+spot.dy);
  if(p.x < -340||p.x > W+340||p.y < -330||p.y>H+330)return;
  ctx.save();ctx.translate(p.x,p.y);
  ctx.scale(Math.max(.55,Math.min(1.3,p.scale||1)),Math.max(.55,Math.min(1.3,p.scale||1)));
@@ -667,11 +667,29 @@ function draw2DExplorationSpot(t){
    ctx.beginPath();ctx.moveTo(-19,-103);ctx.lineTo(-19,-146);ctx.moveTo(68,-58);ctx.lineTo(53,-8);ctx.stroke();
    for(let k=0;k<5;k++){ctx.fillStyle='#213940';ctx.beginPath();ctx.ellipse(-90+k*39,-60,8,5,0,0,7);ctx.fill();}coral(-45,2);
  }else if(spot.type==='dolhareubang'){
-   rock(-20,9,134,34,'#35494d');rock(109,-11,76,34,'#30464b');
-   ctx.fillStyle='#515e5d';ctx.beginPath();ctx.moveTo(-29,-15);ctx.lineTo(-25,-81);ctx.quadraticCurveTo(-31,-126,0,-133);ctx.quadraticCurveTo(31,-128,25,-81);ctx.lineTo(29,-15);ctx.closePath();ctx.fill();
-   ctx.fillStyle='#3b4747';ctx.fillRect(-31,-137,62,11);
-   ctx.fillStyle='#263439';ctx.beginPath();ctx.arc(-12,-100,4,0,7);ctx.arc(12,-100,4,0,7);ctx.fill();
-   coral(98,-15,'#b57d83');coral(-92,-12,'#b18a9c');
+   // Jeju basalt dol hareubang: grounded plinth, wide nose, circular eyes, hat and folded hands.
+   // Baseline y=0 is the seafloor; do not float the statue above the terrain.
+   ctx.save();ctx.translate(0,-12);
+   rock(0,2,108,25,'#253a3d');
+   ctx.fillStyle='#4b5b59';ctx.strokeStyle='#263b3e';ctx.lineWidth=5;
+   ctx.beginPath();ctx.roundRect(-60,-32,120,35,8);ctx.fill();ctx.stroke();
+   // Tapered basalt torso
+   ctx.beginPath();ctx.moveTo(-47,-31);ctx.quadraticCurveTo(-52,-88,-38,-148);ctx.quadraticCurveTo(0,-172,38,-148);ctx.quadraticCurveTo(52,-88,47,-31);ctx.closePath();ctx.fill();ctx.stroke();
+   // Rounded face and strong protruding nose
+   ctx.beginPath();ctx.ellipse(0,-166,37,46,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#3b4b4b';ctx.beginPath();ctx.ellipse(-16,-170,8,9,0,0,Math.PI*2);ctx.ellipse(16,-170,8,9,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#697674';ctx.beginPath();ctx.moveTo(0,-169);ctx.lineTo(-10,-146);ctx.quadraticCurveTo(0,-140,11,-146);ctx.closePath();ctx.fill();
+   ctx.strokeStyle='#2c4142';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,-135,15,.1,Math.PI-.1);ctx.stroke();
+   // Characteristic broad brim and rounded cylindrical hat
+   ctx.fillStyle='#495a58';ctx.strokeStyle='#293e40';ctx.lineWidth=5;
+   ctx.beginPath();ctx.roundRect(-48,-221,96,15,5);ctx.fill();ctx.stroke();
+   ctx.beginPath();ctx.moveTo(-33,-220);ctx.lineTo(-31,-246);ctx.quadraticCurveTo(0,-266,31,-246);ctx.lineTo(33,-220);ctx.closePath();ctx.fill();ctx.stroke();
+   // Both hands rest together across the stomach
+   ctx.strokeStyle='#77827d';ctx.lineWidth=12;ctx.lineCap='round';
+   ctx.beginPath();ctx.moveTo(-38,-100);ctx.quadraticCurveTo(-21,-85,-2,-96);ctx.moveTo(38,-100);ctx.quadraticCurveTo(21,-85,2,-96);ctx.stroke();
+   // Basalt pores
+   ctx.fillStyle='#253d3d';for(let j=0;j<19;j++){let x=((j*29)%69)-34,y=-37-((j*47)%164);if(y<-200||Math.abs(x)>34&&y<-145)continue;ctx.beginPath();ctx.arc(x,y,1.8+(j%3)*.5,0,Math.PI*2);ctx.fill()}
+   ctx.restore();
  }else if(spot.type==='basalt'||spot.type==='kelpRock'){
    rock(-89,-22,90,68,'#273d45');rock(63,-38,123,92,'#354f53');rock(129,-76,51,57,'#294047');
    for(let i=0;i<9;i++)stem(-144+i*34,0,spot.type==='kelpRock'?'#537d5b':'#457068');
@@ -1802,14 +1820,18 @@ for(const rp of peers){
   }
   group.userData.version=key;
  }
- const remoteDepth=Math.max(0,Number(rp.depth)||0),remoteX=(Number(rp.x)||620)-620;
- // Visible local 3D neighborhood: preserve relative depth but avoid 95-world-units-per-meter hiding peers.
- const viewForward=new T.Vector3(0,0,-1).applyEuler(camera.rotation);viewForward.y=0;viewForward.normalize();
- const viewRight=new T.Vector3(1,0,0).applyAxisAngle(new T.Vector3(0,1,0),camera.rotation.y);
- const relX=Math.max(-7,Math.min(7,(Number(rp.x)-diver.x)*.035+(Number(rp.navX)||0)-navX));
- const relY=Math.max(-5,Math.min(5,(m-remoteDepth)*1.2));
- const relZ=Math.max(-4,Math.min(4,(Number(rp.navZ)||0)-navZ));
- group.position.copy(camera.position).addScaledVector(viewForward,14+relZ).addScaledVector(viewRight,relX);group.position.y+=relY;
+ // Place peers at their own WORLD position, never relative to the viewer's camera.
+ // Client and server exchange the existing horizontal 2D coordinate, 3D navigation and depth.
+ const remoteDepth=Math.max(0,Number(rp.depth)||0);
+ const remoteDiving=!!rp.diving;
+ const remoteX=Math.max(-215,Math.min(215,(Number(rp.x)-620)*.0725+(Number(rp.navX)||0)));
+ const remoteY=remoteDiving?Math.max(-9100,-remoteDepth*95):4.6;
+ const remoteZ=(remoteDiving?6:22)+(Number(rp.navZ)||0)-14;
+ const targetPosition=new T.Vector3(remoteX,remoteY,remoteZ);
+ // Smooth network updates without moving the target with the local camera.
+ if(!group.userData.positionInitialized){group.position.copy(targetPosition);group.userData.positionInitialized=true}
+ else group.position.lerp(targetPosition,Math.min(1,dt*9));
+ group.visible=Number(rp.spot)===idx;
  group.rotation.y=Number(rp.yaw)||0;group.scale.setScalar(1.8);
  group.visible=true;
  const proj=group.position.clone().project(camera),vw=view.clientWidth,vh=view.clientHeight;
