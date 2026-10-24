@@ -859,7 +859,7 @@ canvas.addEventListener('pointerup',e=>{
   pointerDown=null;
 });
 
-$('photo').onclick=()=>{
+$('photo').onclick=()=>{if(document.querySelector('.game')?.classList.contains('is3d')){const sceneCanvas=document.querySelector('#threeView canvas');if(sceneCanvas){const link=document.createElement('a');link.download='BLUELOG_3D_GROUP_'+Date.now()+'.png';link.href=sceneCanvas.toDataURL('image/png');link.click();notify('3D 바다에서 함께 찍은 사진을 저장했어요 📸');return;}}
   const focused=(window.visibleEntities||[]).filter(e=>e.x>140&&e.x<860&&e.y>90&&e.y<560);
   const keys=[...new Set(focused.map(e=>e.o.key))];
   photos.push(...keys.map(key=>({key,place:spots[idx].name,date:new Date().toLocaleDateString('ko-KR')})));
@@ -1300,7 +1300,7 @@ spawnScene(); requestAnimationFrame(render);
  if(controls.forward){navX-=Math.sin(yaw)*speed;navZ-=Math.cos(yaw)*speed;}
  if(controls.back){navX+=Math.sin(yaw)*speed;navZ+=Math.cos(yaw)*speed;}
  navX=Math.max(-205,Math.min(205,navX));navZ=Math.max(-205,Math.min(205,navZ));
- camera.position.set(Math.max(-215,Math.min(215,baseX*1.45+navX)),dive?Math.max(-9100,-m*95):4.6,(dive?6:22)+navZ);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
+ camera.position.set(Math.max(-215,Math.min(215,baseX*1.45+navX)),dive?Math.max(-9100,-m*95):4.6,(dive?6:22)+navZ);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;window.BL3DCamera={x:navX,z:navZ,yaw:yaw};
  // The surface state has a bright sky, islands, horizon, and no underwater fish visible.
  terrain.children.forEach(o=>{if(o.userData&&o.userData.seed!==undefined)return;});
  const deep=Math.min(1,m/95),fogColor=new T.Color(0x4abed0).lerp(new T.Color(0x07354a),Math.pow(deep,1.55));
@@ -1361,24 +1361,43 @@ for(const rp of peers){
  if(!group){group=new T.Group();group.userData.version='';scene.add(group);otherMeshes.set(rp.id,group)}
  if(group.userData.version!==key){
   while(group.children.length){const child=group.children[0];group.remove(child);child.geometry?.dispose?.();child.material?.dispose?.()}
-  const outfit=remoteGearColor(equipped.outfit,'#182e42'),fins=remoteGearColor(equipped.fins,'#e5fbff'),mask=remoteGearColor(equipped.mask,'#f5ffff'),headwear=remoteGearColor(equipped.headwear,'#36242d');
+  const outfit=remoteGearColor(equipped.outfit,'#182e42'),shorts=/^swim_men_/.test(equipped.outfit||''),fins=remoteGearColor(equipped.fins,'#e5fbff'),mask=remoteGearColor(equipped.mask,'#f5ffff'),headwear=remoteGearColor(equipped.headwear,'#36242d');
   const add=(geometry,col,x,y,z)=>{const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color:col,roughness:.7}));mesh.position.set(x,y,z);group.add(mesh);return mesh};
   add(new T.CapsuleGeometry(.62,1.35,4,8),outfit,0,0,0);
   add(new T.SphereGeometry(.46,12,9),'#eec09b',0,1.38,0);
-  add(new T.SphereGeometry(.49,12,8),headwear,0,1.65,-.02);
+  
+  // Real gear variants, not the same generic head for every swimmer.
+  const hairId=String(equipped.hair||'hair_wavy');
+  const hairColor=remoteGearColor(equipped.hair,'#30232b');
+  if(!equipped.headwear){
+    const crown=add(new T.SphereGeometry(.49,12,8),hairColor,0,1.65,-.02);crown.scale.set(1,.60,1);
+    if(!hairId.includes('short')){
+      const strands=hairId.includes('braid')?2:hairId.includes('ponytail')?1:hairId.includes('bob')?5:8;
+      for(let k=0;k<strands;k++){
+        const a=(k/(strands||1))*Math.PI*1.65+.7;
+        const length=hairId.includes('bob')?.45:hairId.includes('braid')?1.05:hairId.includes('ponytail')?1.30:1.05;
+        add(new T.CapsuleGeometry(.065,length,.2,5),hairColor,Math.cos(a)*.37,1.35-length*.47,Math.sin(a)*.25-.10);
+      }
+    }
+  }else{
+    const isCap=String(equipped.headwear).startsWith('cap');
+    add(new T.SphereGeometry(.52,12,8),headwear,0,1.72,0).scale.set(1,isCap?.40:.25,1);
+    if(isCap)add(new T.BoxGeometry(.58,.065,.42),headwear,0,1.65,.48);
+  }
+  
   add(new T.BoxGeometry(.84,.26,.30),mask,0,1.44,.40);
   for(const sign of [-1,1]){
    add(new T.CapsuleGeometry(.17,.65,3,6),outfit,sign*.81,-.12,0).rotation.z=sign*.42;
-   add(new T.CapsuleGeometry(.19,.80,3,6),outfit,sign*.30,-1.50,0);
-   add(new T.BoxGeometry(.36,.1,.85),fins,sign*.31,-2.12,.31);
+   add(new T.CapsuleGeometry(.19,.80,3,6),shorts?'#e8af8e':outfit,sign*.30,-1.50,0);
+   if(equipped.socks)add(new T.CapsuleGeometry(.18,.28,3,6),remoteGearColor(equipped.socks,'#b6dbee'),sign*.30,-1.94,0);add(new T.BoxGeometry(.36,.1,.85),fins,sign*.31,-2.12,.31);
   }
   group.userData.version=key;
  }
  const remoteDepth=Math.max(0,Number(rp.depth)||0),remoteX=(Number(rp.x)||620)-620;
- group.position.set(remoteX*.05*1.45,(rp.diving?-remoteDepth*95:4.4),-12);
+ group.position.set(remoteX*.05*1.45+(Number(rp.navX)||0),(rp.diving?-remoteDepth*95:4.4),-12+(Number(rp.navZ)||0));group.rotation.y=Number(rp.yaw)||0;
  group.visible=true;
  const proj=group.position.clone().project(camera),vw=view.clientWidth,vh=view.clientHeight;
- window.BlueLog3DPosition[rp.id]=(proj.z>=-1&&proj.z<=1)?{x:(proj.x+1)*vw/2+(view.offsetLeft||0),y:(1-proj.y)*vh/2+(view.offsetTop||0)}:null;
+ window.BlueLog3DPosition[rp.id]=(proj.z>=-1&&proj.z<=1&&proj.x>=-1&&proj.x<=1&&proj.y>=-1&&proj.y<=1)?{x:(proj.x+1)*vw/2+(view.offsetLeft||0),y:(1-proj.y)*vh/2+(view.offsetTop||0)}:null;
 }
 for(const [id,mesh] of otherMeshes){if(!peers.some(p=>p.id===id)){scene.remove(mesh);otherMeshes.delete(id);delete window.BlueLog3DPosition[id]}}
 renderer.render(scene,camera);}
@@ -1711,7 +1730,7 @@ translateOptions();
 </script>
 
 
-<!-- BLUE LOG MULTIPLAYER v5 -->
+<!-- BLUE LOG MULTIPLAYER v6 -->
 <style>
 #blueLiveBadge{position:fixed;left:12px;bottom:calc(91px + env(safe-area-inset-bottom));z-index:91;border-radius:20px;padding:7px 13px;background:#edffff;color:#12566c;border:1px solid #76cadb;font:bold 12px system-ui;box-shadow:0 4px 11px #05465b33}
 #blRemoteTouch{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden}
@@ -1728,29 +1747,29 @@ translateOptions();
 'use strict';
 const game=document.querySelector('.game'),panel=document.getElementById('onlinePanel');if(!game||!panel)return;
 for(const id of ['blueLiveBadge','blueLiveToast','blueRemoteLayer','blueLiveList','blueProfileCard','blueShareSTA','blRemoteTouch','blProfile','blRemoteList','blShare'])document.getElementById(id)?.remove();
-const badge=document.createElement('button');badge.id='blueLiveBadge';badge.textContent='âª ìë² ì°ê²° ì¤';document.body.append(badge);
+const badge=document.createElement('button');badge.id='blueLiveBadge';badge.textContent='⚪ 서버 연결 중';document.body.append(badge);
 const layer=document.createElement('div');layer.id='blRemoteTouch';game.append(layer);
-const modal=document.createElement('div');modal.id='blProfile';modal.innerHTML='<button type="button" id="blClose">ë«ê¸° â</button><h3>ð¤¿ ë¤ì´ë² íë¡í</h3><div id="blProfileContent"></div>';document.body.append(modal);document.getElementById('blClose').onclick=()=>modal.classList.remove('open');
+const modal=document.createElement('div');modal.id='blProfile';modal.innerHTML='<button type="button" id="blClose">닫기 ✕</button><h3>🤿 다이버 프로필</h3><div id="blProfileContent"></div>';document.body.append(modal);document.getElementById('blClose').onclick=()=>modal.classList.remove('open');
 const list=document.createElement('div');list.id='blRemoteList';panel.append(list);
-const label=document.createElement('label');label.id='blShare';label.innerHTML='<input type="checkbox"> ì¤íí±(STA) ê¸°ë¡ì ë¤ë¥¸ ë¤ì´ë²ìê² ê³µê°';panel.append(label);
+const label=document.createElement('label');label.id='blShare';label.innerHTML='<input type="checkbox"> 스태틱(STA) 기록을 다른 다이버에게 공개';panel.append(label);
 const consent=label.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
 const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
 const gear=()=>{try{return JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}').equipped||{}}catch{return {}}};
-const nick=()=>String(document.getElementById('diverNickname')?.value||'ë°ë¤ ííê°').trim().slice(0,16)||'ë°ë¤ ííê°';
+const nick=()=>String(document.getElementById('diverNickname')?.value||'바다 탐험가').trim().slice(0,16)||'바다 탐험가';
 const send=o=>{if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o))};
-const place=p=>String(p.spotName||('ë°ë¤ '+(Number(p.spot)+1)))+' Â· '+(p.diving?'ìì¤ '+(Number(p.depth)||0).toFixed(1)+'m':'ìë©´');
+const place=p=>String(p.spotName||('바다 '+(Number(p.spot)+1)))+' · '+(p.diving?'수중 '+(Number(p.depth)||0).toFixed(1)+'m':'수면');
 const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('place')?.value)||0;
 const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
 function statLog(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const x=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(x))return x}}catch{}return []}
 function syncSTA(){send({type:'sta',share:consent.checked,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
-function inspect(id){const p=players.find(q=>q.id===id);modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'ë¤ì´ë²')+' Â· ê¸°ë¡ ì¡°í ì¤';send({type:'inspect',id})}
+function inspect(id){const p=players.find(q=>q.id===id);modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
  if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
  const own=diver,ownEq=gearState.equipped;
  for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
    const q=coords(p);
-   try{diver={...own,x:q.x,y:q.y,z:q.z,dir:q.x<own.x?-1:1,swim:Math.sin(t/220)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
+   try{diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
  }
 }
 const clickTargets=new Map();
@@ -1767,18 +1786,18 @@ function updateHitTargets(){
  }
  for(const [id,el] of clickTargets){if(!current.has(id)){el.remove();clickTargets.delete(id)}}
 }
-function updatePanel(){badge.textContent=me?'ð¢ '+players.length+'ëª ì ì ì¤':'âª ìë² ì°ê²° ì¤';const count=panel.querySelector('.stat b');if(count)count.textContent=me?players.length+'ëª ì ì ì¤':'ì°ê²° ì¤';list.replaceChildren();for(const p of players){const b=document.createElement('button');b.textContent='ð¤¿ '+p.nick+(p.id===me?' (ë)':'')+' Â· '+place(p);b.onclick=()=>inspect(p.id);list.append(b)}}
+function updatePanel(){badge.textContent=me?'🟢 '+players.length+'명 접속 중':'⚪ 서버 연결 중';const count=panel.querySelector('.stat b');if(count)count.textContent=me?players.length+'명 접속 중':'연결 중';list.replaceChildren();for(const p of players){const b=document.createElement('button');b.textContent='🤿 '+p.nick+(p.id===me?' (나)':'')+' · '+place(p);b.onclick=()=>inspect(p.id);list.append(b)}}
 function start(){clearTimeout(reconnect);const proto=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(proto+'//'+location.host+'/')}catch{reconnect=setTimeout(start,delay);return}
  ws.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:0,equipped:gear(),token:localStorage.getItem(key)||''})};
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
  if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();updatePanel()}
  if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel()}
- if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['ëë¤ì',m.nick||'ë¤ì´ë²'],['íì¬ ìì¹',p?place(p):'ì¤íë¼ì¸'],['ì°©ì© ì¥ë¹',Object.values(m.equipped||{}).join(' Â· ')||'ê¸°ë³¸ ì¥ë¹'],['ì ì ì°ìµ',String(m.stats?.dives||0)+'í / íê·  '+(m.stats?.average||0)+'ì´ / ìµì¥ '+(m.stats?.longest||0)+'ì´'],['ì¤íí±(STA)',m.sta?'ìµê³  '+m.sta.best+'ì´ Â· íê·  '+m.sta.average+'ì´ Â· '+m.sta.count+'í':'ë¹ê³µê°']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}}
+ if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}}
  };
  ws.onclose=()=>{me=null;players=[];updatePanel();reconnect=setTimeout(start,delay);delay=Math.min(30000,delay*2)};ws.onerror=()=>{try{ws.close()}catch{}};
 }
 const tick=setInterval(()=>{if(ws?.readyState!==1)return;
- const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'ë°ë¤':'ë°ë¤',x:q.x,y:q.y,z:q.z,diving:d.diving,depth:d.depth});
+ const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'바다':'바다',x:q.x,y:q.y,z:q.z,dir:q.dir,swim:q.swim,navX:window.BL3DCamera?.x||0,navZ:window.BL3DCamera?.z||0,yaw:window.BL3DCamera?.yaw||0,diving:d.diving,depth:d.depth});
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
 window.BlueLogSync={draw2D:display2D,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect};
