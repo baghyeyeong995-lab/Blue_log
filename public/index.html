@@ -1681,149 +1681,57 @@ translateOptions();
 })();
 </script>
 
-<!-- BLUE LOG LIVE MULTIPLAYER CLIENT v1 -->
+
+<!-- BLUE LOG MULTIPLAYER v4 -->
 <style>
-#blueLiveBadge{position:fixed;right:12px;top:80px;z-index:90;background:#edfaffeb;color:#124c68;border:1px solid #70c6e8;border-radius:16px;padding:7px 12px;box-shadow:0 3px 15px #002f4a33;font-weight:800;font-size:12px;max-width:65%;cursor:pointer}
-#blueLiveToast{position:fixed;right:12px;top:125px;z-index:115;background:#096488f0;color:white;border-radius:13px;padding:10px 13px;font-weight:700;font-size:13px;max-width:77%;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .2s,transform .2s}
-#blueLiveToast.show{opacity:1;transform:translateY(0)}
-#onlinePanel .blueLiveRow{padding:9px 0;border-top:1px solid #a9d5e8;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:5px}
-#onlinePanel .blueLiveRow button{padding:6px 9px;font-size:12px}
-@media(max-width:760px){#blueLiveBadge{top:56px}#blueLiveToast{top:103px}}
+#blueLiveBadge{position:fixed!important;left:10px!important;right:auto!important;top:auto!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;z-index:89!important;background:#e9faff!important;color:#075270!important;border:1px solid #49b6da!important;max-width:50vw!important;border-radius:50px!important;padding:7px 10px!important;font-size:11px!important;font-weight:800!important;box-shadow:0 2px 9px #00364b45!important}
+#blueLiveToast{position:fixed!important;left:12px!important;right:auto!important;top:auto!important;bottom:calc(135px + env(safe-area-inset-bottom))!important;z-index:95!important;max-width:80vw!important;background:#006c98ef!important;color:white!important;border-radius:12px!important;padding:9px 12px!important;opacity:0;pointer-events:none}
+#blueLiveToast.show{opacity:1!important}
+#blueRemoteLayer{position:absolute;inset:0;z-index:8;pointer-events:none}
+.blueRemote{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;display:flex;align-items:center;flex-direction:column;gap:1px;border:0!important;background:transparent!important;padding:0!important;filter:drop-shadow(0 3px 4px #00203399)}
+.blueRemote svg{width:55px;height:90px;overflow:visible}.blueRemote span{font:800 11px system-ui;background:#eaffffed;color:#07516c;border-radius:14px;padding:3px 7px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#blueProfileCard{position:fixed;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);width:min(370px,92vw);background:#eefbff;color:#15465c;border:2px solid #74c7df;padding:18px;border-radius:20px;box-shadow:0 14px 55px #002b4099;display:none;font:14px system-ui}
+#blueProfileCard.show{display:block}#blueProfileCard .close{float:right}#blueProfileCard p{margin:8px 0;line-height:1.6}
+#blueShareSTA{display:flex;gap:8px;align-items:center;font-size:12px;margin:10px 0}
+@media(max-width:760px){#blueLiveBadge{bottom:calc(88px + env(safe-area-inset-bottom))!important}.blueRemote svg{width:44px;height:72px}}
 </style>
-<button id="blueLiveBadge" type="button">🌐 서버 연결 중…</button><div id="blueLiveToast" role="status" aria-live="polite"></div>
 <script>
-(function(){
+(()=>{
 'use strict';
-const panel=document.getElementById('onlinePanel'),badge=document.getElementById('blueLiveBadge'),toast=document.getElementById('blueLiveToast');if(!panel||!badge)return;
-const count=panel.querySelector('.stat b'),hint=panel.querySelector('p.muted'),list=document.createElement('div');panel.appendChild(list);
-const TOKEN='blue_log_live_token_v1',AVATAR='blue_log_live_avatar_v1';let socket,id=null,players=[],seen=null,delay=1000,toastTimer,retryTimer,stopped=false;
-const isKo=()=>document.getElementById('language')?.value==='ko';const txt=(ko,en)=>isKo()?ko:en;
-function nick(){try{return String(JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}').nickname||'').trim().slice(0,16)||txt('바다 탐험가','Ocean diver')}catch{return txt('바다 탐험가','Ocean diver')}}
-function avatar(){let x=Number(localStorage.getItem(AVATAR));if(!Number.isInteger(x)||x<0||x>5){x=Math.floor(Math.random()*6);localStorage.setItem(AVATAR,String(x))}return x}
-function send(x){if(socket&&socket.readyState===1)socket.send(JSON.stringify(x))}
-function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),4200)}
-function draw(){const ok=socket&&socket.readyState===1&&!!id;badge.textContent=ok?'🟢 '+txt(players.length+'명 접속 중',players.length+' online'):'⚪ '+txt('서버 연결 중…','Connecting…');if(count)count.textContent=ok?txt(players.length+'명 접속 중',players.length+' online'):txt('서버 연결 중…','Connecting…');if(hint)hint.textContent=ok?txt('실제 접속한 다이버만 표시됩니다. 기록을 누르면 서버 저장 기록을 확인합니다.','Only currently connected divers appear. Tap records to view server-saved statistics.'):txt('실시간 서버에 연결 중입니다.','Connecting to the live server.');list.replaceChildren();for(const p of players){const row=document.createElement('div'),label=document.createElement('span'),btn=document.createElement('button');row.className='blueLiveRow';label.textContent='🤿 '+p.nick+(p.id===id?txt(' (나)',' (me)'):'')+(p.diving?txt(' · 잠수 중',' · diving'):txt(' · 수면',' · surface'));btn.type='button';btn.textContent=txt('기록 보기','Records');btn.onclick=()=>send({type:'inspect',id:p.id});row.append(label,btn);list.append(row)}}
-function connect(){if(stopped)return;id=null;players=[];seen=null;draw();try{socket=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/')}catch{schedule();return}
-socket.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:avatar(),token:localStorage.getItem(TOKEN)||''})};
-socket.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='welcome'){id=m.id;if(typeof m.token==='string')localStorage.setItem(TOKEN,m.token);draw()}else if(m.type==='players'&&Array.isArray(m.players)){const next=m.players.filter(p=>p&&typeof p.id==='string'&&typeof p.nick==='string');if(seen!==null){for(const p of next)if(p.id!==id&&!seen.has(p.id))notify('🤿 '+p.nick+txt('님이 입장했어요!',' joined!'));for(const p of players)if(p.id!==id&&!next.some(x=>x.id===p.id))notify('👋 '+p.nick+txt('님이 퇴장했어요.',' left.'))}players=next;seen=new Set(next.map(p=>p.id));draw()}else if(m.type==='inspect'){const s=m.stats||{};notify('📊 '+m.nick+' · '+(s.dives||0)+txt('회 · 평균 ',' dives · average ')+(s.average||0)+txt('초 · 최장 ','s · longest ')+(s.longest||0)+'s')}else if(m.type==='error'){notify(String(m.message||'Server error'))}};
-socket.onclose=()=>{id=null;players=[];seen=null;draw();schedule()};socket.onerror=()=>{try{socket.close()}catch{}}}
-function schedule(){if(stopped)return;clearTimeout(retryTimer);retryTimer=setTimeout(connect,delay);delay=Math.min(delay*2,30000)}
-badge.onclick=()=>{const btn=document.querySelector('#oceanDock button[data-tab="social"]');if(btn)btn.click()};
-document.getElementById('saveProfile')?.addEventListener('click',()=>setTimeout(()=>send({type:'profile',nick:nick(),avatar:avatar()}),30));
-window.addEventListener('pagehide',()=>{stopped=true;clearTimeout(retryTimer);socket?.close()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!socket||socket.readyState===3)){stopped=false;clearTimeout(retryTimer);connect()}});
-connect();
-})();
-</script>
-<!-- BLUE LOG live multiplayer presence (v2) -->
-<style>
-.game{position:relative!important}
-#blueLiveBadge{position:absolute!important;right:12px!important;top:12px!important;z-index:12;background:#edfaffee!important;color:#124b66!important;border:1px solid #76cbe9!important;border-radius:17px!important;padding:8px 12px!important;box-shadow:0 4px 18px #06466533!important;font-weight:800!important;font-size:12px!important;max-width:60vw!important;cursor:pointer!important}
-#blueLiveBadge:focus-visible{outline:3px solid #007cc2}
-#blueLiveToast{position:absolute!important;top:54px!important;right:12px!important;z-index:13;background:#12658de8!important;color:white!important;padding:11px 16px!important;border-radius:14px!important;box-shadow:0 5px 15px #02425e55!important;font-size:13px!important;font-weight:700!important;max-width:75vw!important;pointer-events:none!important;opacity:0!important;transform:translateY(-7px)!important;transition:opacity .2s,transform .2s!important}
-#blueLiveToast.show{opacity:1!important;transform:translateY(0)!important}
-#blueRemoteLayer{position:absolute;inset:0;pointer-events:none;z-index:9}
-.blueRemoteDiver{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px}
-.blueRemoteDiver .icon{font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22))}
-.blueRemoteDiver .name{font-size:11px;font-weight:800;color:#104760;background:#ffffffd9;border:1px solid #8dcee6;border-radius:999px;padding:2px 7px;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#onlinePanel .blue-player{padding:10px 8px;border-top:1px solid #b0dce8;display:flex;gap:8px;align-items:center;justify-content:space-between}
-#onlinePanel .blue-player button{font-size:12px;padding:5px 9px}
-@media(max-width:760px){#blueLiveBadge{top:10px!important;right:10px!important;font-size:11px!important;padding:7px 10px!important;max-width:52vw!important}#blueLiveToast{top:48px!important;right:10px!important;font-size:12px!important;padding:9px 12px!important}.blueRemoteDiver .icon{font-size:24px}.blueRemoteDiver .name{font-size:10px;max-width:72px}}
-</style>
-<script>
-(function(){
-  'use strict';
-  const panel=document.getElementById('onlinePanel');
-  const game=document.querySelector('.game');
-  if(!panel||!game)return;
-  document.getElementById('blueLiveBadge')?.remove();
-  document.getElementById('blueLiveToast')?.remove();
-  document.getElementById('blueRemoteLayer')?.remove();
-  const oldList=document.getElementById('blueLiveList');
-  if(oldList)oldList.remove();
-  const badge=document.createElement('button');
-  badge.id='blueLiveBadge'; badge.type='button'; badge.textContent='⚪ 서버 연결 중'; badge.setAttribute('aria-label','실시간 다이버 목록 열기');
-  const toast=document.createElement('div'); toast.id='blueLiveToast'; toast.setAttribute('role','status'); toast.setAttribute('aria-live','polite');
-  const layer=document.createElement('div'); layer.id='blueRemoteLayer';
-  game.append(badge,toast,layer);
-  const status=panel.querySelector('.stat b');
-  const explanation=panel.querySelector('p.muted');
-  const list=document.createElement('div'); list.id='blueLiveList'; panel.appendChild(list);
-  let socket=null,myId=null,players=[],seen=null,toastTimer=null,retryTimer=null,delay=1000,stopped=false,heartbeat=null;
-  const tokenKey='blue_log_live_token_v1';
-  const avatarKey='blue_log_live_avatar_v1';
-  const language=()=>document.getElementById('language')?.value||'ko';
-  const t=(ko,en)=>language()==='ko'?ko:en;
-  const escapeHTML=v=>String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"})[m]);
-  function nick(){try{const p=JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}');return String(p.nickname||'').trim().slice(0,16)||t('바다 탐험가','Ocean diver')}catch{return t('바다 탐험가','Ocean diver')}}
-  function avatar(){ let n=Number(localStorage.getItem(avatarKey)); if(!Number.isInteger(n)||n<0||n>5){ n=Math.floor(Math.random()*6); localStorage.setItem(avatarKey,String(n)); } return n; }
-  function currentSpot(){ const el=document.getElementById('place')||document.getElementById('spotQuickSelect'); if(!el) return 0; const v=Number(el.value); return Number.isFinite(v)?Math.max(0,Math.round(v)):(el.selectedIndex||0); }
-  function divingNow(){ const txt=((document.getElementById('depth')?.textContent)||'').replace(/[^d.]/g,''); const depth=Number(txt)||0; return depth>0.5; }
-  function send(obj){ if(socket&&socket.readyState===WebSocket.OPEN) socket.send(JSON.stringify(obj)); }
-  function notify(message){ toast.textContent=message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),4200); }
-  function avatarEmoji(a,d){ const surface=['🤿','🐬','🐢','🦈','🐠','🪼']; return d?'🤿':(surface[Number(a)]||'🤿'); }
-  function renderRemote(){
-    layer.replaceChildren();
-    const same=players.filter(p=>p.id!==myId && Number(p.spot)===currentSpot());
-    const w=game.clientWidth||320, h=game.clientHeight||420;
-    const ySurface=Math.max(170,h*0.57), yDive=Math.min(h-86,h*0.72);
-    same.forEach((p,i)=>{
-      const el=document.createElement('div'); el.className='blueRemoteDiver';
-      const x=((i+1)/(same.length+1))*w; const y=p.diving?yDive:ySurface;
-      el.style.left=x+'px'; el.style.top=y+'px';
-      el.innerHTML='<div class="icon">'+avatarEmoji(p.avatar,p.diving)+'</div><div class="name">'+escapeHTML(p.nick)+'</div>';
-      layer.appendChild(el);
-    });
-  }
-  function render(){
-    const connected=socket&&socket.readyState===WebSocket.OPEN&&myId!==null;
-    badge.textContent=connected?('🟢 '+t(players.length+'명 접속 중',players.length+' online')):t('⚪ 서버 연결 중','⚪ Connecting');
-    if(status) status.textContent=connected?t(players.length+'명 접속 중',players.length+' online'):t('서버 연결 중…','Connecting…');
-    if(explanation) explanation.textContent=connected?t('실제 접속 중인 다이버만 보여요. 메인 화면에는 같은 바다의 다이버가 표시됩니다.','Only live divers are shown. Divers in the same sea appear on the main screen.') : t('실시간 멀티플레이 서버에 연결하고 있어요.','Connecting to the multiplayer server.');
-    list.replaceChildren();
-    players.forEach(p=>{
-      const row=document.createElement('div'); row.className='blue-player';
-      const left=document.createElement('span'); left.textContent=(p.id===myId?'🌊 ':'🤿 ')+p.nick+(p.id===myId?t(' (나)',' (me)'):'')+(p.diving?t(' · 잠수 중',' · diving'):t(' · 수면',' · surface'));
-      const btn=document.createElement('button'); btn.type='button'; btn.textContent=t('기록 보기','Records'); btn.onclick=()=>send({type:'inspect',id:p.id});
-      row.append(left,btn); list.appendChild(row);
-    });
-    renderRemote();
-  }
-  function startHeartbeat(){ clearInterval(heartbeat); heartbeat=setInterval(()=>{ if(socket&&socket.readyState===WebSocket.OPEN){ send({type:'move',spot:currentSpot(),x:620,y:122,z:divingNow()?0.35:0.72,diving:divingNow()}); } },900); }
-  function connect(){
-    if(stopped)return;
-    myId=null; players=[]; seen=null; render();
-    const scheme=location.protocol==='https:'?'wss:':'ws:';
-    try{ socket=new WebSocket(scheme+'//'+location.host+'/'); }catch(e){ schedule(); return; }
-    socket.addEventListener('open',()=>{ delay=1000; send({type:'hello',nick:nick(),avatar:avatar(),token:localStorage.getItem(tokenKey)||''}); startHeartbeat(); });
-    socket.addEventListener('message',e=>{
-      let data; try{ data=JSON.parse(e.data); }catch{return;}
-      if(data.type==='welcome'){
-        myId=data.id; if(typeof data.token==='string') localStorage.setItem(tokenKey,data.token); render();
-      }else if(data.type==='players'&&Array.isArray(data.players)){
-        const next=data.players.filter(p=>p&&typeof p.id==='string'&&typeof p.nick==='string');
-        if(seen!==null){
-          for(const p of next){ if(p.id!==myId && !seen.has(p.id)) notify('🤿 '+p.nick+t('님이 입장했어요!',' joined!')); }
-          for(const p of players){ if(p.id!==myId && !next.some(q=>q.id===p.id)) notify('👋 '+p.nick+t('님이 퇴장했어요.',' left.')); }
-        }
-        players=next; seen=new Set(players.map(p=>p.id)); render();
-      }else if(data.type==='inspect'){
-        const st=data.stats||{};
-        notify(t('📊 '+data.nick+' · 총 '+(st.dives||0)+'회, 평균 '+(st.average||0)+'초, 최장 '+(st.longest||0)+'초','📊 '+data.nick+' · '+(st.dives||0)+' dives, avg '+(st.average||0)+'s, longest '+(st.longest||0)+'s'));
-      }else if(data.type==='error'){ notify(String(data.message||'Connection error')); }
-    });
-    socket.addEventListener('close',()=>{ myId=null; players=[]; seen=null; render(); schedule(); });
-    socket.addEventListener('error',()=>{ try{ socket.close(); }catch{} });
-  }
-  function schedule(){ if(stopped)return; clearTimeout(retryTimer); retryTimer=setTimeout(connect,delay); delay=Math.min(delay*2,30000); }
-  badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
-  document.getElementById('saveProfile')?.addEventListener('click',()=>setTimeout(()=>send({type:'profile',nick:nick(),avatar:avatar()}),40));
-  document.getElementById('place')?.addEventListener('change',()=>setTimeout(renderRemote,50));
-  document.getElementById('spotQuickSelect')?.addEventListener('change',()=>setTimeout(renderRemote,50));
-  window.addEventListener('resize',renderRemote);
-  window.addEventListener('pagehide',()=>{ stopped=true; clearInterval(heartbeat); clearTimeout(retryTimer); socket?.close(); });
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!socket||socket.readyState===WebSocket.CLOSED)){ stopped=false; clearTimeout(retryTimer); connect(); } });
-  connect();
+const game=document.querySelector('.game'),panel=document.getElementById('onlinePanel');if(!game||!panel)return;
+for(const id of ['blueLiveBadge','blueLiveToast','blueRemoteLayer','blueLiveList'])document.getElementById(id)?.remove();
+const badge=document.createElement('button');badge.id='blueLiveBadge';badge.type='button';badge.textContent='⚪ 서버 연결 중';
+const toast=document.createElement('div');toast.id='blueLiveToast';toast.setAttribute('role','status');
+const layer=document.createElement('div');layer.id='blueRemoteLayer';game.append(layer);document.body.append(badge,toast);
+const card=document.createElement('div');card.id='blueProfileCard';card.innerHTML='<button type="button" class="close">✕</button><h3>🤿 다이버 프로필</h3><div id="blueProfileBody">불러오는 중…</div>';document.body.append(card);card.querySelector('.close').onclick=()=>card.classList.remove('show');
+const count=panel.querySelector('.stat b'),detail=panel.querySelector('p.muted'),list=document.createElement('div');list.id='blueLiveList';panel.append(list);
+const shareLine=document.createElement('label');shareLine.id='blueShareSTA';shareLine.innerHTML='<input type="checkbox" id="blueShareSTACheck"> 다른 다이버에게 내 스태틱 기록 공개';panel.append(shareLine);
+const consent=shareLine.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
+let ws=null,me=null,players=[],prev=null,wait=1200,toastTimer,heartbeat,connected=false;
+const key='blue_log_live_token_v1';
+function gear(){try{return JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'{}').equipped||{}}catch{return {}}}
+function nick(){try{return String(JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}').nickname||'바다 탐험가').slice(0,16)||'바다 탐험가'}catch{return '바다 탐험가'}}
+function avatar(){return 0}
+function send(m){if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(m))}
+function note(s){toast.textContent=s;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),3600)}
+function spot(){const e=document.getElementById('place');return e?Math.max(0,Number(e.value)||e.selectedIndex||0):0}
+function spotName(){const e=document.getElementById('place');const option=e?.selectedOptions?.[0];return (option?.textContent||document.getElementById('where')?.textContent||'알 수 없는 바다').replace('📍','').trim().slice(0,60)}
+function diveStatus(){const d=document.getElementById('depth')?.textContent||'0';const n=Number((d.match(/[0-9]+(?:[.][0-9]+)?/)||[])[0]||0);const phase=document.getElementById('phase')?.textContent||'';const submerged=n>=0.5||(/잠수|하강|상승|수중/.test(phase)&&!/수면/.test(phase));return {diving:submerged,depth:submerged?Math.round(n*10)/10:0}}
+function staRows(){try{for(const k of ['blue_sta_entries','ocean_quest_sta_entries_v1','staEntries']){const raw=JSON.parse(localStorage.getItem(k)||'null');if(Array.isArray(raw))return raw}}catch{}return []}
+function syncSTA(){send({type:'sta',share:consent.checked,log:staRows().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
+function color(v,def){return /^#[0-9a-f]{6}$/i.test(v||'')?v:def}
+const GEAR={suit_black:'#162334',suit_mint:'#64dbc6',swim_pink:'#ff95be',swim_lilac:'#bba1f5'};
+function diverSVG(p){const e=p.equipped||{};const outfit=GEAR[e.outfit]||(['mint','pink','lilac','blue','black'].find(k=>String(e.outfit||'').includes(k))==='mint'?'#64dbc6':'#263a55');const hair=String(e.hair||'');const fin=String(e.fins||'').includes('pink')?'#ff95be':String(e.fins||'').includes('black')?'#111827':'#d7f5ff';const mask=String(e.mask||'').includes('black')?'#17283a':'#f4ffff';return '<svg viewBox="0 0 72 108" xmlns="http://www.w3.org/2000/svg"><path d="M28 77L20 101 7 105 24 100 32 86M42 77L52 101 65 105 48 100 39 86" stroke="'+fin+'" stroke-width="10" stroke-linecap="round" fill="none"/><path d="M25 43Q19 57 22 78L33 83 35 69 39 83 51 77Q52 52 45 43Z" fill="'+outfit+'" stroke="#133748" stroke-width="2"/><path d="M26 47L12 66 M46 47L60 66" stroke="'+outfit+'" stroke-width="10" stroke-linecap="round"/><ellipse cx="35" cy="25" rx="18" ry="21" fill="#f2cfb8"/><path d="M16 21Q16 '+(hair.includes('short')?'12':'2')+' 36 4Q58 8 54 25" stroke="#38252c" stroke-width="9" fill="none"/><rect x="16" y="23" width="39" height="14" rx="7" fill="'+mask+'" stroke="#0e526d" stroke-width="2"/><rect x="21" y="26" width="29" height="7" rx="3" fill="#65aec5"/><path d="M53 30L64 22V8" stroke="#fff" stroke-width="4" fill="none"/></svg>'}
+function showProfile(id){const p=players.find(x=>x.id===id);card.classList.add('show');const body=document.getElementById('blueProfileBody');body.textContent=(p?.nick||'다이버')+' · 기록 조회 중…';send({type:'inspect',id})}
+function presence(p){const place=String(p.spotName||('바다 '+(Number(p.spot)+1)));const depth=Number(p.depth)||0;return '📍 '+place+' · '+(p.diving?'🌊 수중 '+depth.toFixed(1)+'m':'☀ 수면')}
+function draw(){const ready=connected&&me!==null;badge.textContent=ready?'🟢 '+players.length+'명 접속 중':'⚪ 서버 연결 중';if(count)count.textContent=ready?players.length+'명 접속 중':'서버 연결 중…';if(detail)detail.textContent='모든 접속자의 바다 위치와 수면·수중 상태, 깊이를 실시간으로 표시합니다. 캐릭터를 누르면 프로필을 볼 수 있어요.';layer.replaceChildren();list.replaceChildren();const same=players.filter(p=>p.id!==me&&Number(p.spot)===spot());same.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.className='blueRemote';b.style.left=((i+1)/(same.length+1)*95)+'%';b.style.top=(p.diving?'65%':'46%');b.innerHTML=diverSVG(p)+'<span></span>';b.querySelector('span').textContent=p.nick+' · '+(p.diving?'수중 '+(Number(p.depth)||0).toFixed(1)+'m':'수면');b.title=presence(p);b.onclick=()=>showProfile(p.id);layer.append(b)});players.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent='🤿 '+p.nick+(p.id===me?' (나)':'')+' · '+presence(p)+' · 프로필';b.style.cssText='width:100%;margin-top:6px;text-align:left';b.onclick=()=>showProfile(p.id);list.append(b)})}
+function connect(){connected=false;me=null;prev=null;players=[];draw();const prot=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(prot+'//'+location.host+'/')}catch{setTimeout(connect,wait);return}ws.onopen=()=>{connected=true;wait=1200;send({type:'hello',nick:nick(),avatar:avatar(),equipped:gear(),token:localStorage.getItem(key)||''});syncSTA()};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();draw()}else if(m.type==='players'){const next=(m.players||[]).filter(p=>p&&p.id);if(prev){for(const p of next)if(p.id!==me&&!prev.has(p.id))note('🤿 '+p.nick+'님 입장!');for(const p of players)if(p.id!==me&&!next.some(q=>q.id===p.id))note('👋 '+p.nick+'님 퇴장')}players=next;prev=new Set(next.map(p=>p.id));draw()}else if(m.type==='inspect'){const s=m.stats||{},t=m.sta;document.getElementById('blueProfileBody').textContent='';const target=document.getElementById('blueProfileBody');const h=document.createElement('p');h.textContent='닉네임: '+m.nick;target.append(h);const current=players.find(p=>p.id===m.id);if(current){const whereabouts=document.createElement('p');whereabouts.textContent='현재 위치: '+presence(current);target.append(whereabouts)}const eq=document.createElement('p');eq.textContent='착용 장비: '+(Object.values(m.equipped||{}).join(', ')||'기본 장비');target.append(eq);const d=document.createElement('p');d.textContent='시뮬레이션 잠수: '+(s.dives||0)+'회 / 평균 '+(s.average||0)+'초 / 최장 '+(s.longest||0)+'초';target.append(d);const st=document.createElement('p');st.textContent=t?'스태틱(STA): '+t.count+'회 / 평균 '+t.average+'초 / 최고 '+t.best+'초'+(t.recent?' / 최근 '+t.recent:''):'스태틱 기록: 비공개';target.append(st)}else if(m.type==='error')note(m.message||'연결 오류')};ws.onclose=()=>{connected=false;me=null;players=[];draw();setTimeout(connect,wait);wait=Math.min(wait*2,30000)};ws.onerror=()=>ws.close()}
+badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
+let lastGear='';heartbeat=setInterval(()=>{if(ws?.readyState!==1)return;const e=JSON.stringify(gear());if(lastGear!==e){lastGear=e;send({type:'appearance',avatar:avatar(),equipped:gear()})}send({type:'move',spot:spot(),spotName:spotName(),x:620,y:122,z:0.55,...diveStatus()});},800);
+document.getElementById('place')?.addEventListener('change',draw);
+document.getElementById('saveProfile')?.addEventListener('click',()=>setTimeout(()=>send({type:'profile',nick:nick()}),50));
+document.getElementById('staSave')?.addEventListener('click',()=>setTimeout(syncSTA,150));
+window.addEventListener('pagehide',()=>{clearInterval(heartbeat);ws?.close()});connect();
 })();
 </script>
 </body>
