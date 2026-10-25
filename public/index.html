@@ -139,6 +139,11 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #blueDiveHistoryManager button{font-size:12px;padding:7px 9px;min-height:34px}
 </style>
 <style id="blShopCategoryStyles">#shopGrid .shopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#shopGrid .shopGrid button[hidden]{display:none!important}#shopGrid .shopGrid button{min-height:74px;text-align:left}#shopGrid .blShopFilters{position:sticky;top:0;background:#effbff;z-index:1}</style>
+
+<style id="blPokeAnimationStyle">
+@keyframes blPoke3DJolt{0%,100%{transform:translate(0,0)}12%{transform:translate(-4px,2px)}24%{transform:translate(4px,-3px)}36%{transform:translate(-3px,-1px)}48%{transform:translate(4px,2px)}60%{transform:translate(-3px,2px)}72%{transform:translate(2px,-2px)}84%{transform:translate(-1px,1px)}}
+#threeView.blPokeTremble{animation:blPoke3DJolt .65s ease-in-out 1!important}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -1014,7 +1019,11 @@ function drawFish(o,t){const p=worldToScreen(o.x,o.y,o.z||0.5);
   ctx.restore(); return {o,x:p.x,y:p.y,scale:p.scale};
 }
 function drawDiver(t){
- const p=worldToScreen(diver.x,diver.y,diver.z); ctx.save(); ctx.translate(p.x,p.y+Math.sin(diver.swim)*2); if(diver.dir<0)ctx.scale(-1,1); ctx.scale(0.95+diver.z*0.18,0.95+diver.z*0.18);
+ const p=worldToScreen(diver.x,diver.y,diver.z); ctx.save(); ctx.translate(p.x,p.y+Math.sin(diver.swim)*2);
+ // Only the poked player's own diver trembles briefly.
+ const shakeLeft=(window.blPokeShiverUntil||0)-performance.now();
+ if(shakeLeft>0&&!(window.blDrawingRemoteDiver)){const fade=Math.min(1,shakeLeft/180);ctx.translate(Math.sin(t*.12)*5*fade,Math.cos(t*.16)*3*fade);}
+ if(diver.dir<0)ctx.scale(-1,1); ctx.scale(0.95+diver.z*0.18,0.95+diver.z*0.18);
  // feminine long wavy hair floating around shoulders
  ctx.lineCap='round'; const hairStyle=gearState.equipped.hair||(gearState.equipped.gender==='male'?'hair_short':'hair_wavy');const hairCount=(hairStyle==='hair_short'||hairStyle.startsWith('hair_men_'))?0:hairStyle==='hair_bob'?8:hairStyle==='hair_ponytail'?7:hairStyle==='hair_braid'?6:12;for(let i=0;i<hairCount;i++){const z=i/Math.max(1,hairCount-1);ctx.strokeStyle=GEAR_CATALOG.find(g=>g.id===hairStyle)?.color||(i%3===0?'#493026':i%3===1?'#251c21':'#694438');ctx.lineWidth=3.4;ctx.beginPath();const x=-12+i*2.2;ctx.moveTo(x,-42);ctx.bezierCurveTo(x-8+Math.sin(t*.002+i)*2,-24,x+10*Math.sin(i+1),-12,x+8*Math.sin(i+1+t*.001),((hairStyle==='hair_short'||hairStyle.startsWith('hair_men_'))?-23:hairStyle==='hair_bob'?-14:hairStyle==='hair_ponytail'?-4:hairStyle==='hair_braid'?14:5+z*5));ctx.stroke();}
  // black short sleeves and shorts, pronounced curved silhouette
@@ -2511,19 +2520,32 @@ const list=document.createElement('div');list.id='blRemoteList';panel.append(lis
 try{localStorage.setItem('blue_share_sta','yes')}catch(e){}
 const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
 const pokeTag='[BL_POKE_V1]';
+let pokeNoticeTimeout=null;
+function showPokeNotice(message){
+ let box=document.getElementById('blPokeNotice');
+ if(!box){box=document.createElement('div');box.id='blPokeNotice';box.setAttribute('role','status');
+ box.style.cssText='position:absolute;z-index:110;top:155px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 28px);border:2px solid #fff3a6;border-radius:13px;background:#ffdb38!important;color:#392700!important;box-shadow:0 4px 20px #0b294d99;padding:10px 15px;font-size:14px;font-weight:900;text-align:center;line-height:1.35;pointer-events:none';game.append(box)}
+ box.textContent='👉 '+message;box.style.display='block';
+ clearTimeout(pokeNoticeTimeout);pokeNoticeTimeout=setTimeout(()=>{box.style.display='none'},2300);
+}
+
 let lastPokeSent=0;const pokedBy=new Map();
-const pokePrefKey='blue_poke_vibration_optin_v1';
-const pokePref=document.createElement('label');pokePref.id='blPokePreference';pokePref.style.cssText='display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px;background:#e9f8ff;border-radius:11px;color:#184760;font-size:12px;font-weight:700';
-const pokeCheck=document.createElement('input');pokeCheck.type='checkbox';pokeCheck.checked=localStorage.getItem(pokePrefKey)==='yes';pokeCheck.style.cssText='width:19px;height:19px;flex:none';
-pokeCheck.onchange=()=>{localStorage.setItem(pokePrefKey,pokeCheck.checked?'yes':'no')};
-pokePref.append(pokeCheck,document.createTextNode('🎮 게임 속 쿡찌르기 진동 받기 (선택 · 실제 숨참기 훈련 중에는 끄기)'));
-panel.append(pokePref);
+// In-game poke: immediate nearby action; vibration depends on browser/device permission.
+const pokeQuick=document.createElement('button');
+pokeQuick.id='blPokeNearby';pokeQuick.type='button';pokeQuick.hidden=true;
+pokeQuick.style.cssText='position:absolute;z-index:14;left:50%;bottom:148px;transform:translateX(-50%);background:#ffdf71!important;color:#4a3400!important;border:2px solid #fff4b7!important;border-radius:24px;padding:9px 16px;font-size:13px;font-weight:850;box-shadow:0 4px 14px #001d3c99;max-width:75%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;touch-action:manipulation';
+pokeQuick.style.display='none';game.append(pokeQuick);
+let pokeTargetId=null;
+pokeQuick.onclick=()=>{if(pokeTargetId)sendPoke(pokeTargetId)};
 function pokeDistance(p){const d=typeof diver!=='undefined'?diver:null;if(!d)return Infinity;const dx=(Number(p.x)||0)-d.x,dy=(Number(p.y)||0)-d.y,dz=((Number(p.z)||.55)-(d.z||.55))*110;return Math.hypot(dx,dy,dz)}
 function pokePossible(p){return Boolean(p&&p.id!==me&&Number(p.spot)===myPlace()&&p.diving&&status().diving&&pokeDistance(p)<230)}
 function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('상대 다이버와 함께 잠수 중 가까이 다가가야 해요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
 function receivePoke(m){if(m.fromId===me||!m.private)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||!pokePossible(sender))return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
-notify('👉 '+(sender.nick||'다이버')+'님이 쿡 찔렀어요!');
-if(pokeCheck.checked&&typeof navigator.vibrate==='function')try{navigator.vibrate(130)}catch(e){}
+const senderName=String(m.fromNick||sender.nick||'다이버').slice(0,30);
+window.blPokeShiverUntil=performance.now()+830;
+const threeStage=document.getElementById('threeView');if(threeStage){threeStage.classList.remove('blPokeTremble');void threeStage.offsetWidth;threeStage.classList.add('blPokeTremble');}
+showPokeNotice(senderName+'님이 콕 찔렀습니다!');
+if(typeof navigator.vibrate==='function')try{navigator.vibrate(100)}catch(e){}
 }
 
 
@@ -2559,7 +2581,7 @@ function renderOwnStaControls(){
  }else{const empty=document.createElement('p');empty.textContent='저장된 기록이 없어요.';section.append(empty)}
  box.querySelector('#blOwnStaControls')?.remove();section.id='blOwnStaControls';box.append(section);
 }
-function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 함께 잠수 중인 가까운 다이버에게만 가능 · 진동은 상대방이 허용한 경우에만 작동';box.append(help)}
+function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 함께 잠수 중인 가까운 다이버에게만 가능 · 기기에 따라 진동이 제한될 수 있어요';box.append(help)}
 function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';addPokeButton(id);send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
@@ -2567,7 +2589,7 @@ function display2D(t){
  const own=diver,ownEq=gearState.equipped;
  for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
    const q=coords(p);
-   try{diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{diver=own;gearState.equipped=ownEq}
+   try{window.blDrawingRemoteDiver=true;diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{window.blDrawingRemoteDiver=false;diver=own;gearState.equipped=ownEq}
  }
 }
 function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=290+(i%5)*105;blueDrawSurfacePeer(t,p,x)}}
@@ -2602,7 +2624,14 @@ const tick=setInterval(()=>{if(ws?.readyState!==1)return;
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
 window.BlueLogSync={isConnected:()=>Boolean(me&&ws?.readyState===WebSocket.OPEN),draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA,updateNickname:(name)=>send({type:'profile',nick:String(name||'바다 탐험가').trim().slice(0,16)||'바다 탐험가'})};
-function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
+let lastPokeDisplay=0;
+function updateNearbyPoke(){
+ const near=players.filter(p=>pokePossible(p)).sort((a,b)=>pokeDistance(a)-pokeDistance(b))[0];
+ pokeTargetId=near?.id||null;
+ pokeQuick.hidden=!near||!me||ws?.readyState!==WebSocket.OPEN;pokeQuick.style.display=pokeQuick.hidden?'none':'block';
+ if(near)pokeQuick.textContent='👉 '+String(near.nick||'다이버').slice(0,16)+' 콕찌르기';
+}
+function track(){updateHitTargets();const now=performance.now();if(now-lastPokeDisplay>180){lastPokeDisplay=now;updateNearbyPoke()}requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="dive"]')?.click();
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
 })();
