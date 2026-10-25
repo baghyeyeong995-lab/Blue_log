@@ -620,7 +620,7 @@ function offerDiveRecord(finished){
  diveRecordToastTimer=setTimeout(()=>{if(toast.isConnected)hideDiveRecordToast()},5000);
 }
 function finishDive(){let finished=null;if(session){const seconds=Math.max(0,Math.round((performance.now()-start)/1000));elapsed=seconds;finished={seconds,restBefore:pendingRest,place:spots[idx].name,at:new Date().toISOString()};}session=false;phase='surface';startSurfaceRest();diver.y=surfaceY-8;diver.vy=0;updateAudio();updateHUD();if(finished)offerDiveRecord(finished);else notify('수면으로 돌아왔어요.');}
-$('enter').onclick=()=>{if(session)return; pendingRest=Math.max(0,(Date.now()-restStartedWall)/1000); session=true; elapsed=0; start=performance.now(); if(diver.y<surfaceY+8) diver.y=surfaceY+18; phase='dive'; notify('입수했어요! 위아래로 헤엄치며 더 깊은 바다를 탐험해 보세요.'); updateAudio(); updateHUD(); };
+$('enter').onclick=()=>{if(session)return; pendingRest=Math.max(0,(Date.now()-restStartedWall)/1000); session=true; blBoatNearbyHint(false); elapsed=0; start=performance.now(); if(diver.y<surfaceY+8) diver.y=surfaceY+18; phase='dive'; notify('입수했어요! 위아래로 헤엄치며 더 깊은 바다를 탐험해 보세요.'); updateAudio(); updateHUD(); };
 $('deeper').onclick=()=>{if(!session) return; diver.vy+=35; controls.down=true; setTimeout(()=>controls.down=false,120);};
 $('rise').onclick=()=>{if(!session) return; diver.vy-=35; controls.up=true; setTimeout(()=>controls.up=false,120);};
 $('surface').onclick=()=>finishDive();
@@ -1185,6 +1185,8 @@ function blBoatNearbyHint(show){
  }
  el.style.display=show?'block':'none';
 }
+// Keep surface-only information hidden in 3D too, where 2D render ticks may pause.
+setInterval(()=>{if(session||phase!=='surface'){const hint=document.getElementById('blBoatNearbyHint');if(hint)hint.style.display='none';}},180);
 function blBoatCoinTick(t){
  for(let i=blBoatCoins.length-1;i>=0;i--)if(t-blBoatCoins[i].created>2200)blBoatCoins.splice(i,1);
  if(session||phase!=='surface'){blBoatNearbyHint(false);return;}
