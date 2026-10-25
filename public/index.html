@@ -1130,7 +1130,7 @@ function updatePlayer(dt){
   if(session){const depth=depthMeters();
     if(window.oceanPrefs?.buoyancy!=='neutral' && depth>10){
       const in3D=document.querySelector('.game')?.classList.contains('is3d');
-      const sinkForce=in3D ? Math.min(.65,(depth-10)*0.035) : Math.min(8,(depth-10)*0.45);
+      const sinkForce=in3D ? Math.min(.325,(depth-10)*0.0175) : Math.min(4,(depth-10)*0.225); // Slower automatic negative buoyancy; manual controls unchanged.
       diver.vy+=sinkForce;
     } /* 중성 구간에서는 자동 침강 없음 */
   }
