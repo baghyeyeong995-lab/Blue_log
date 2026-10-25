@@ -685,8 +685,8 @@ function offerDiveRecord(finished){
 }
 function finishDive(){let finished=null;if(session){const seconds=Math.max(0,Math.round((performance.now()-start)/1000));elapsed=seconds;finished={seconds,restBefore:pendingRest,place:spots[idx].name,at:new Date().toISOString()};}session=false;phase='surface';startSurfaceRest();diver.y=surfaceY-8;diver.vy=0;updateAudio();updateHUD();if(finished)offerDiveRecord(finished);else notify('수면으로 돌아왔어요.');}
 $('enter').onclick=()=>{if(session)return; pendingRest=Math.max(0,(Date.now()-restStartedWall)/1000); session=true; blBoatNearbyHint(false); elapsed=0; start=performance.now(); if(diver.y<surfaceY+8) diver.y=surfaceY+18; phase='dive'; notify('입수했어요! 위아래로 헤엄치며 더 깊은 바다를 탐험해 보세요.'); updateAudio(); updateHUD(); };
-$('deeper').onclick=()=>{if(!session) return; diver.vy+=23.8; controls.down=true; setTimeout(()=>controls.down=false,120);};
-$('rise').onclick=()=>{if(!session) return; diver.vy-=23.8; controls.up=true; setTimeout(()=>controls.up=false,120);};
+$('deeper').onclick=()=>{if(!session) return; diver.vy+=19.992; controls.down=true; setTimeout(()=>controls.down=false,120);};
+$('rise').onclick=()=>{if(!session) return; diver.vy-=19.992; controls.up=true; setTimeout(()=>controls.up=false,120);};
 $('surface').onclick=()=>finishDive();
 $('reset').onclick=()=>{session=false; elapsed=0; phase='surface'; spawnScene(); updateAudio(); };
 $('collect').onclick=()=>tryCollect();
@@ -694,7 +694,7 @@ $('collect').onclick=()=>tryCollect();
 $('shell').onclick=()=>modal('🐚 뿔소라 관찰','뿔소라를 발견했어요! 게임에서는 사진으로만 수집할 수 있어요. 실제 채취는 지역 규정과 보호 여부를 확인해야 해요.');
 
 function bindMoveButton(el,dir){let timer; const on=()=>{controls[dir]=true; moveImpulse(dir)}; const off=()=>{controls[dir]=false; clearInterval(timer)}; el.addEventListener('pointerdown',e=>{e.preventDefault(); on(); timer=setInterval(()=>moveImpulse(dir),100)}); ['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,off));}
-function moveImpulse(dir){if(dir==='left'){diver.vx-=17;diver.dir=-1}else if(dir==='right'){diver.vx+=17;diver.dir=1}else if(dir==='up'&&session){diver.vy-=11.05}else if(dir==='down'&&session){diver.vy+=11.05}else if(dir==='forward'&&session){diver.vz+=0.08}else if(dir==='back'&&session){diver.vz-=0.08}}
+function moveImpulse(dir){if(dir==='left'){diver.vx-=17;diver.dir=-1}else if(dir==='right'){diver.vx+=17;diver.dir=1}else if(dir==='up'&&session){diver.vy-=9.282}else if(dir==='down'&&session){diver.vy+=9.282}else if(dir==='forward'&&session){diver.vz+=0.08}else if(dir==='back'&&session){diver.vz-=0.08}}
 document.querySelectorAll('[data-move]').forEach(b=>bindMoveButton(b,b.dataset.move));
 document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='e'){e.preventDefault(); tryCollect(); return;} const k={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',a:'left',d:'right',w:'up',s:'down',q:'back',f:'forward'}[e.key]; if(k){e.preventDefault(); controls[k]=true; moveImpulse(k);}});
 document.addEventListener('keyup',e=>{const k={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',a:'left',d:'right',w:'up',s:'down',q:'back',f:'forward'}[e.key]; if(k) controls[k]=false;});
@@ -1122,7 +1122,7 @@ function updatePlayer(dt){
   if(controls.left){diver.vx-=accel;diver.dir=-1}
   if(controls.right){diver.vx+=accel;diver.dir=1}
   // Reduced vertical steering only in 3D; 2D and horizontal travel stay unchanged.
-  const verticalAccel=is3DMove?accel*.0748:accel*.612; // Manual ascent/descent additionally 15% slower in 2D and 3D.
+  const verticalAccel=is3DMove?accel*.062832:accel*.51408; // Manual ascent/descent 16% slower than previous version.
   if(session && controls.up) diver.vy-=verticalAccel;
   if(session && controls.down) diver.vy+=verticalAccel;
   if(session && controls.forward) diver.vz+=0.02;
