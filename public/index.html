@@ -263,7 +263,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 <div class="panel" id="ownedGearPanel"><h2>🎒 내가 보유한 장비</h2><p class="desc">구매한 장비를 착용하거나 벗고, 배·요트·크루즈를 여러 대 동시에 띄울 수 있어요.</p><div id="ownedGearBody"></div></div>
 </div>
 </div>
-<div class="footer">⚠️ 이 게임은 프리다이빙 스태틱 연습용 게임입니다. 스태틱 연습과 기록을 재미있게 관리해 보세요. 실제 숨참기 연습은 반드시 안전요원이 지켜보는 환경에서 진행하고, 혼자 연습하거나 과호흡하지 마세요.</div>
+<div class="footer">⚠️ 이 게임은 프리다이빙 스태틱 연습용 게임입니다. 스태틱 연습과 기록을 재미있게 관리해 보세요.</div>
 <div class="credit">기획·개발 <strong>박혜영</strong> · <a href="mailto:bhy960822@gmail.com">bhy960822@gmail.com</a></div>
 </div>
 <div id="oceanBackdrop"></div><div id="oceanTabHead"><strong id="oceanTabTitle"></strong><button id="oceanTabClose" type="button">✕ 닫기</button></div><nav id="oceanDock" aria-label="하단 게임 메뉴">
@@ -482,12 +482,12 @@ function renderShop(){
    const proceed=document.createElement('button');proceed.type='button';proceed.style.cssText='flex:1;background:#58d5ef;color:#084761';proceed.textContent=own?(equipped?'벗기 / 회수':'착용 / 띄우기'):'🛍 구매하기';
    const close=document.createElement('button');close.type='button';close.textContent='닫기';close.style.cssText='background:#dfedf4;color:#24556a';close.onclick=()=>{previewPanel.style.display='none'};
    actions.append(proceed,close);previewPanel.append(actions);
-   proceed.onclick=()=>{
+   function completePurchaseAndEquip(){
      if(!gearState.owned.includes(g.id)){
        const balance=Number(gearState.money)||0;
-       if(balance<g.price){const shortfall=g.price-balance;const msg=`💸 게임머니가 부족해요! ${g.name}: ${g.price.toLocaleString('ko-KR')}원 · 보유 ${balance.toLocaleString('ko-KR')}원 · 부족 ${shortfall.toLocaleString('ko-KR')}원`;notify(msg);desc.textContent=msg;desc.style.color='#a52b29';return;}
-       if(!window.confirm(`${g.name}을(를) ${g.price.toLocaleString('ko-KR')}원에 구매하시겠습니까?\n\n예(확인) / 아니오(취소)`)){notify('구매를 취소했어요.');return;}
-       gearState.money-=g.price;gearState.owned.push(g.id);
+       if(balance<g.price){showShortfall(balance);return;}
+       gearState.money=balance-g.price;
+       gearState.owned.push(g.id);
        notify('🛍 '+g.name+' 구매 완료!');
      }
      if(g.cat==='vessel'){
@@ -495,6 +495,31 @@ function renderShop(){
      }else if(gearState.equipped[g.cat]===g.id){delete gearState.equipped[g.cat]}else{gearState.equipped[g.cat]=g.id}
      const nowOn=g.cat==='vessel'?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id;
      saveGear();renderShop();drawCharacterPreview();notify(g.name+(nowOn?' 장착 완료!':' 해제 완료!'));
+   }
+   function showShortfall(balance){
+     const shortfall=g.price-balance;
+     desc.textContent=`💸 게임머니가 부족해요! 가격 ${g.price.toLocaleString('ko-KR')}원 · 보유 ${balance.toLocaleString('ko-KR')}원 · 부족 ${shortfall.toLocaleString('ko-KR')}원`;
+     desc.style.color='#a52b29';
+     notify('💸 '+shortfall.toLocaleString('ko-KR')+'원이 부족해요!');
+   }
+   proceed.onclick=()=>{
+     if(gearState.owned.includes(g.id)){completePurchaseAndEquip();return;}
+     const balance=Number(gearState.money)||0;
+     if(balance<g.price){showShortfall(balance);return;}
+     // Mobile browsers may suppress repeated native confirm() prompts after cancellation.
+     // Keep confirmation in the shop panel and always restore buttons after "아니오".
+     if(previewPanel.querySelector('.blInlinePurchaseConfirm'))return;
+     const confirmation=document.createElement('div');confirmation.className='blInlinePurchaseConfirm';
+     confirmation.style.cssText='border:2px solid #e2b84c;background:#fff4bf;border-radius:12px;padding:11px;margin-top:9px;color:#4c380b';
+     const question=document.createElement('p');question.textContent=`${g.name}을(를) ${g.price.toLocaleString('ko-KR')}원에 구매하시겠습니까?`;
+     question.style.cssText='font-size:13px;font-weight:800;margin:0 0 8px';
+     const buttons=document.createElement('div');buttons.style.cssText='display:flex;gap:8px';
+     const yes=document.createElement('button');yes.type='button';yes.textContent='예 · 구매';yes.style.cssText='flex:1;background:#20a989;color:#fff;min-height:42px';
+     const no=document.createElement('button');no.type='button';no.textContent='아니오';no.style.cssText='flex:1;background:#fff;color:#654c20;min-height:42px';
+     buttons.append(yes,no);confirmation.append(question,buttons);previewPanel.append(confirmation);
+     proceed.disabled=true;
+     no.onclick=()=>{confirmation.remove();proceed.disabled=false;notify('구매를 취소했어요. 다시 선택할 수 있어요.')};
+     yes.onclick=()=>{confirmation.remove();proceed.disabled=false;completePurchaseAndEquip()};
    };
  }
  const initial=shop.dataset.category||'all';
