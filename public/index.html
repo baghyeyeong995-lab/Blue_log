@@ -1127,18 +1127,29 @@ function updatePlayer(dt){
   if(session && controls.down) diver.vy+=verticalAccel;
   if(session && controls.forward) diver.vz+=0.02;
   if(session && controls.back) diver.vz-=0.02;
+  let sinkForce=0;
   if(session){const depth=depthMeters();
     if(window.oceanPrefs?.buoyancy!=='neutral' && depth>10){
-      const in3D=document.querySelector('.game')?.classList.contains('is3d');
-      const sinkForce=in3D ? Math.min(.325,(depth-10)*0.0175) : Math.min(4,(depth-10)*0.225); // Slower automatic negative buoyancy; manual controls unchanged.
-      diver.vy+=sinkForce;
+      const in3D=is3DMove;
+      sinkForce=in3D ? Math.min(.325,(depth-10)*0.0175) : Math.min(4,(depth-10)*0.225);
+      // Negative buoyancy is automatic only. Pressing DOWN does not stack
+      // gravity on top of manually controlled descent.
+      if(!controls.down) diver.vy+=sinkForce;
     } /* 중성 구간에서는 자동 침강 없음 */
   }
   else {diver.vy += (surfaceY-8-diver.y)*.22;
      // On the 2D surface, up/down swims away from or toward the viewer (not diving).
      if(!is3DMove){if(controls.up)surfaceLane-=dt*.45;if(controls.down)surfaceLane+=dt*.45;surfaceLane=clamp(surfaceLane,0,1);}
    }
-  diver.vx*=0.92; diver.vy*=is3DMove?.65:.9; diver.vz*=0.88;
+  const verticalDrag=is3DMove?.65:.9;
+  diver.vx*=0.92; diver.vy*=verticalDrag; diver.vz*=0.88;
+  if(session && controls.down && !controls.up){
+    // Cap manual descent at the ascent-equivalent terminal speed. At depths
+    // over 10m, ascent is opposed by negative buoyancy, so account for it
+    // without adding that downward force to the manual descent itself.
+    const ascentEquivalent=Math.max(0,verticalAccel-sinkForce)*verticalDrag/(1-verticalDrag);
+    diver.vy=Math.min(diver.vy,ascentEquivalent);
+  }
   diver.x=clamp(diver.x+diver.vx*dt*1.9,40,worldW-40);
   diver.z=clamp(diver.z+diver.vz*dt*3.2,0.18,0.95);
   if(session) diver.y=clamp(diver.y+diver.vy*dt*1.9,surfaceY+2,3180); else diver.y=clamp(diver.y+diver.vy*dt*1.9,surfaceY-10,surfaceY+4);
