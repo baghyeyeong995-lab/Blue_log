@@ -461,8 +461,14 @@ function renderShop(){
  const selectors=document.createElement('div');selectors.className='blShopFilters';selectors.style.cssText='display:flex;gap:5px;overflow-x:auto;padding:6px 0 10px;scrollbar-width:thin';
  const productArea=document.createElement('div');productArea.className='shopGrid';shop.append(selectors,productArea);
  const previewPanel=document.createElement('section');previewPanel.id='blShopItemPreview';previewPanel.style.cssText='display:none;margin:8px 0;padding:11px;border:2px solid #73bcda;border-radius:13px;background:#f4fcff;color:#15435b';
- shop.insertBefore(previewPanel,productArea);
- function showItemPreview(g,own,equipped){
+ previewPanel.style.gridColumn='1 / -1'; // Inline details occupy a full grid row immediately below the selected product.
+ productArea.appendChild(previewPanel);
+ function showItemPreview(g,own,equipped,clickedButton){
+   // Put the card directly below the clicked item's two-column row, not above the catalog.
+   const visibleButtons=[...productArea.querySelectorAll('button[data-cat]')].filter(b=>!b.hidden);
+   const at=visibleButtons.indexOf(clickedButton);
+   const rowEnd=visibleButtons[Math.min(visibleButtons.length-1,Math.floor(Math.max(0,at)/2)*2+1)];
+   if(rowEnd)rowEnd.after(previewPanel);
    previewPanel.style.display='block';previewPanel.replaceChildren();
    const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap';
    const pic=document.createElement('canvas');pic.width=142;pic.height=142;pic.style.cssText='width:112px;height:112px;border-radius:12px;background:linear-gradient(#a4e8f2,#1c769a);flex:none';
@@ -523,12 +529,12 @@ function renderShop(){
    };
  }
  const initial=shop.dataset.category||'all';
- function showCategory(cat){shop.dataset.category=cat;[...productArea.children].forEach(el=>{el.hidden=cat!=='all'&&el.dataset.cat!==cat});[...selectors.children].forEach(b=>{b.style.background=b.dataset.cat===cat?'#007ba9':'#e3f7ff';b.style.color=b.dataset.cat===cat?'white':'#18536e'})}
+ function showCategory(cat){previewPanel.style.display='none';shop.dataset.category=cat;[...productArea.children].forEach(el=>{el.hidden=cat!=='all'&&el.dataset.cat!==cat});[...selectors.children].forEach(b=>{b.style.background=b.dataset.cat===cat?'#007ba9':'#e3f7ff';b.style.color=b.dataset.cat===cat?'white':'#18536e'})}
  for(const [key,label] of [['all','🛍 전체'],...priority.map(cat=>[cat,categoryLabels[cat]])]){const b=document.createElement('button');b.textContent=label;b.dataset.cat=key;b.type='button';b.style.cssText='flex:none;font-size:12px;padding:8px 10px;white-space:nowrap;border-radius:999px';b.onclick=()=>showCategory(key);selectors.append(b)}
  priority.flatMap(cat=>GEAR_CATALOG.filter(g=>g.cat===cat)).forEach(g=>{
   const btn=document.createElement('button');btn.type='button';const own=gearState.owned.includes(g.id),isBoat=g.cat==='vessel',equipped=isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id;
   btn.textContent=g.symbol+' '+g.name+(g.cat==='pet'?' · 자동 수집 '+g.range+'범위':'')+' · '+(isBoat?(equipped?'✅ 바다에 띄움 · 회수하기':own?'보유 · 바다에 띄우기':g.price.toLocaleString('ko-KR')+'원'):equipped?'✅ 착용 중 · 벗기':own?'착용하기':g.price.toLocaleString('ko-KR')+'원');
-  btn.onclick=()=>showItemPreview(g,gearState.owned.includes(g.id),isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id);
+  btn.onclick=()=>showItemPreview(g,gearState.owned.includes(g.id),isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id,btn);
   btn.dataset.cat=g.cat;productArea.appendChild(btn)
  });showCategory(initial);
  if(ownedBody){
