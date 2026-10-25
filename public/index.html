@@ -1132,9 +1132,10 @@ function updatePlayer(dt){
     if(window.oceanPrefs?.buoyancy!=='neutral' && depth>10){
       const in3D=is3DMove;
       sinkForce=in3D ? Math.min(.325,(depth-10)*0.0175) : Math.min(4,(depth-10)*0.225);
-      // Negative buoyancy is automatic only. Pressing DOWN does not stack
-      // gravity on top of manually controlled descent.
-      if(!controls.down) diver.vy+=sinkForce;
+      // Passive negative buoyancy is 80% weaker (20% of previous speed).
+      // Keep the existing manually controlled ascent feel unchanged; pressing
+      // DOWN never adds passive sinking acceleration.
+      if(!controls.down) diver.vy+=controls.up ? sinkForce : sinkForce*0.20;
     } /* 중성 구간에서는 자동 침강 없음 */
   }
   else {diver.vy += (surfaceY-8-diver.y)*.22;
