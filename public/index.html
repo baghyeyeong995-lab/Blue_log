@@ -2510,6 +2510,22 @@ const list=document.createElement('div');list.id='blRemoteList';panel.append(lis
 // All divers share their own STA summary by default; no visibility toggle.
 try{localStorage.setItem('blue_share_sta','yes')}catch(e){}
 const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
+const pokeTag='[BL_POKE_V1]';
+let lastPokeSent=0;const pokedBy=new Map();
+const pokePrefKey='blue_poke_vibration_optin_v1';
+const pokePref=document.createElement('label');pokePref.id='blPokePreference';pokePref.style.cssText='display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px;background:#e9f8ff;border-radius:11px;color:#184760;font-size:12px;font-weight:700';
+const pokeCheck=document.createElement('input');pokeCheck.type='checkbox';pokeCheck.checked=localStorage.getItem(pokePrefKey)==='yes';pokeCheck.style.cssText='width:19px;height:19px;flex:none';
+pokeCheck.onchange=()=>{localStorage.setItem(pokePrefKey,pokeCheck.checked?'yes':'no')};
+pokePref.append(pokeCheck,document.createTextNode('🎮 게임 속 쿡찌르기 진동 받기 (선택 · 실제 숨참기 훈련 중에는 끄기)'));
+panel.append(pokePref);
+function pokeDistance(p){const d=typeof diver!=='undefined'?diver:null;if(!d)return Infinity;const dx=(Number(p.x)||0)-d.x,dy=(Number(p.y)||0)-d.y,dz=((Number(p.z)||.55)-(d.z||.55))*110;return Math.hypot(dx,dy,dz)}
+function pokePossible(p){return Boolean(p&&p.id!==me&&Number(p.spot)===myPlace()&&p.diving&&status().diving&&pokeDistance(p)<230)}
+function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('상대 다이버와 함께 잠수 중 가까이 다가가야 해요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
+function receivePoke(m){if(m.fromId===me||!m.private)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||!pokePossible(sender))return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
+notify('👉 '+(sender.nick||'다이버')+'님이 쿡 찔렀어요!');
+if(pokeCheck.checked&&typeof navigator.vibrate==='function')try{navigator.vibrate(130)}catch(e){}
+}
+
 
 const chatBox=document.createElement('section');chatBox.id='blueChat';chatBox.innerHTML=`<div class="blChatHead"><b>💬 다이버 실시간 채팅</b><button type="button" id="blChatToggle">접기</button></div><div class="blChatTarget"><label for="blChatRecipient">대화 상대</label><select id="blChatRecipient"><option value="">🌍 같은 바다 전체</option></select></div><div id="blChatMessages" role="log" aria-live="polite"></div><form id="blChatForm"><input id="blChatInput" maxlength="220" autocomplete="off" placeholder="메시지를 입력하세요" aria-label="채팅 메시지"><button type="submit">전송</button></form><small>같은 바다 전체 채팅 또는 현재 접속한 다이버에게 1:1 메시지 · 현재 접속 중일 때만 전달</small>`;
 document.body.append(chatBox);if(matchMedia("(max-width:760px)").matches){chatBox.classList.add("collapsed");chatBox.querySelector("#blChatToggle").textContent="펼치기"}
@@ -2543,7 +2559,8 @@ function renderOwnStaControls(){
  }else{const empty=document.createElement('p');empty.textContent='저장된 기록이 없어요.';section.append(empty)}
  box.querySelector('#blOwnStaControls')?.remove();section.id='blOwnStaControls';box.append(section);
 }
-function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';send({type:'inspect',id})}
+function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 함께 잠수 중인 가까운 다이버에게만 가능 · 진동은 상대방이 허용한 경우에만 작동';box.append(help)}
+function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';addPokeButton(id);send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
  if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
@@ -2574,9 +2591,9 @@ function start(){clearTimeout(reconnect);const proto=location.protocol==='https:
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
  if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();updatePanel()}
  if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel();chatRoster()}
-  if(m.type==='chat'){chatLine(m)}
+  if(m.type==='chat'){if(m.text===pokeTag){receivePoke(m)}else{chatLine(m)}}
   if(m.type==='chat_error'){chatLine({fromNick:'안내',text:m.message||'메시지를 보낼 수 없어요.'})}
- if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}if(m.id===me)renderOwnStaControls()}
+ if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}if(m.id===me)renderOwnStaControls();else addPokeButton(m.id)}
  };
  ws.onclose=()=>{me=null;players=[];updatePanel();reconnect=setTimeout(start,delay);delay=Math.min(30000,delay*2)};ws.onerror=()=>{try{ws.close()}catch{}};
 }
