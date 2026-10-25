@@ -127,7 +127,18 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #blueChat small{padding:3px 8px 7px;color:#436778}#blueChat.collapsed .blChatTarget,#blueChat.collapsed #blChatMessages,#blueChat.collapsed #blChatForm,#blueChat.collapsed small{display:none}
 @media(max-width:760px){#blueChat{right:8px;bottom:calc(75px + env(safe-area-inset-bottom));width:min(290px,calc(100vw - 16px));max-height:42vh}#blueChat.collapsed{width:auto}}
 </style>
-<meta name="blue-log-maintenance-version" content="v50.0-multiplayer-world-and-jeju-statue"></head>
+<meta name="blue-log-maintenance-version" content="v50.0-multiplayer-world-and-jeju-statue">
+<style id="blueHistoryFix20261025">
+#modal.modal{z-index:230!important;position:fixed!important;}
+#modal.modal.on{display:flex!important;}
+#modal .sheet{max-height:82dvh;overflow-y:auto;overscroll-behavior:contain;}
+#blDiveRecordToast{background-color:#ffcf00!important;background-image:none!important;color:#292000!important;border:2px solid #a77400!important;opacity:1!important;filter:none!important;backdrop-filter:none!important;}
+#blDiveRecordToast .blRecordTitle{color:#292000!important;text-shadow:none!important}
+#blDiveRecordToast .blRecordSave{background:#116441!important;color:white!important}
+#blDiveRecordToast .blRecordSkip{background:#fff8cc!important;color:#342a00!important}
+#blueDiveHistoryManager button{font-size:12px;padding:7px 9px;min-height:34px}
+</style>
+</head>
 <body>
 <div class="shell">
 <header>
@@ -522,6 +533,9 @@ function offerDiveRecord(finished){
  const no=document.createElement('button');no.type='button';no.className='blRecordSkip';no.textContent='닫기';
  no.style.cssText='padding:4px 7px;min-height:27px;background:#fff8c6;color:#453306;border:1px solid #bda443;border-radius:8px;font-size:12px;font-weight:800';
  actions.append(yes,no);toast.append(label,actions);game.appendChild(toast);
+ toast.style.setProperty('background-color','#ffcf00','important');
+ toast.style.setProperty('background-image','none','important');
+ toast.style.setProperty('color','#292000','important');
  yes.onclick=()=>{hideDiveRecordToast();records.push(finished.seconds);try{localStorage.setItem('blue_records',JSON.stringify(records))}catch(e){}logbook.push(finished);saveDiveLog();updateHUD();notify('이번 잠수 '+finished.seconds+'초를 기록에 저장했어요.')};
  no.onclick=()=>hideDiveRecordToast();
  diveRecordToastTimer=setTimeout(()=>{if(toast.isConnected)hideDiveRecordToast()},5000);
@@ -544,7 +558,31 @@ document.addEventListener('keyup',e=>{const k={ArrowLeft:'left',ArrowRight:'righ
 
 function modal(title,html){$('modalbody').innerHTML=`<h2>${title}</h2><p>${html}</p>`;$('modal').classList.add('on')}
 $('close').onclick=()=>$('modal').classList.remove('on'); $('modal').onclick=e=>{if(e.target===$('modal'))$('close').click()};
-$('historyBtn').onclick=()=>{const rows=logbook.slice().reverse().map((r,i)=>{const date=r.at?new Date(r.at).toLocaleString('ko-KR'):'이전 버전';return `<article><b>#${logbook.length-i}</b> · ${date}<br>🌊 ${r.place||'바다'}<br>🤿 잠수 <b>${totalFormat(r.seconds)}</b> · 🩵 직전 수면 휴식 <b>${r.restBefore==null?'기록 없음':totalFormat(r.restBefore)}</b></article>`;}).join('');modal('📒 잠수·수면 휴식 기록',`<div class="album">${rows||'<p>아직 완료한 잠수가 없어요.</p>'}</div><p>완료된 잠수마다 잠수 시간과 그 직전 휴식 시간을 함께 저장해요. 이전 V4 기록에는 휴식 데이터가 없어 ‘기록 없음’으로 표시돼요. 저장은 이 브라우저의 로컬 저장소에 이루어져요.</p>`);};
+function showBlueDiveHistoryManager(){
+ const body=$('modalbody');body.replaceChildren();
+ const title=document.createElement('h2');title.textContent='📒 잠수·수면 휴식 전체 기록';body.append(title);
+ const manager=document.createElement('div');manager.id='blueDiveHistoryManager';body.append(manager);
+ function render(){
+  manager.replaceChildren();
+  const intro=document.createElement('p');intro.textContent='내가 저장한 잠수 '+logbook.length+'건 · 원하는 기록을 개별 삭제하거나 모두 삭제할 수 있어요.';manager.append(intro);
+  if(!logbook.length){const empty=document.createElement('p');empty.textContent='저장된 잠수 기록이 없어요.';manager.append(empty);return;}
+  const all=document.createElement('button');all.type='button';all.textContent='🗑 전체 삭제';all.style.cssText='background:#ffe4da;color:#7b2d20;border:1px solid #b86b5a;margin:4px 0 10px';
+  all.onclick=()=>{if(!confirm('저장된 잠수 기록 '+logbook.length+'건을 모두 삭제할까요?'))return;if(!confirm('정말 다 지울 거냐고 다시 확인합니다. 삭제하면 복구할 수 없습니다. 계속할까요?'))return;logbook.length=0;saveDiveLog();try{localStorage.setItem('blue_records','[]')}catch(e){}records.length=0;updateHUD();render()};manager.append(all);
+  const list=document.createElement('div');list.className='album';list.style.maxHeight='48dvh';
+  logbook.map((r,index)=>({r,index})).reverse().forEach(({r,index})=>{
+   const row=document.createElement('article');row.style.cssText='display:flex;gap:7px;align-items:center;justify-content:space-between;border-bottom:1px solid #83b5c5;padding:9px 0';
+   const info=document.createElement('div');info.style.cssText='min-width:0;overflow-wrap:anywhere;flex:1';
+   const date=r.at?new Date(r.at).toLocaleString('ko-KR'):'이전 버전';
+   info.textContent='#'+(index+1)+' · '+date+' · '+(r.place||'바다')+' · 잠수 '+totalFormat(Number(r.seconds)||0)+' · 직전 휴식 '+(r.restBefore==null?'기록 없음':totalFormat(r.restBefore));
+   const del=document.createElement('button');del.type='button';del.textContent='삭제';del.style.cssText='flex:none;background:#ffe4da;color:#7b2d20;border:1px solid #b86b5a';
+   del.onclick=()=>{if(!confirm('이 잠수 '+totalFormat(Number(r.seconds)||0)+' 기록을 삭제할까요?'))return;logbook.splice(index,1);saveDiveLog();try{localStorage.setItem('blue_records',JSON.stringify(logbook.map(x=>Number(x.seconds)||0)))}catch(e){}records.splice(0,records.length,...logbook.map(x=>Number(x.seconds)||0));updateHUD();render()};
+   row.append(info,del);list.append(row);
+  });manager.append(list);
+ }
+ render();$('modal').classList.add('on');
+}
+$('historyBtn').type='button';
+$('historyBtn').onclick=e=>{e.preventDefault();e.stopPropagation();showBlueDiveHistoryManager()};
 function speciesInfo(key){const f=fauna[key]; modal(`${f[4]} ${f[0]}`,`<b>⚠️ 위험도: ${f[1]}</b><br>${f[2]}<br><br><b>관찰 요령</b><br>${f[3]}<br><small>실제 현장에서는 지역별 종 차이와 상황 차이가 있을 수 있어요.</small>`)}
 // Approximate habitat suitability, not a claim that animals exist at every exact dive site.
 // Rock-dwelling Korean abalone / horned turban snail; restrict regional game appearances.
