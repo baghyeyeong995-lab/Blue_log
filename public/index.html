@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BLUE LOG · OCEAN QUEST | v23</title>
+<title>BLUE LOG · FREE DIVING · STATIC</title>
 <style>
 :root{color-scheme:dark;--bg:#051521;--panel:#0b2c3d;--line:#4d7f92;--accent:#74f0de;--text:#eafcff;--soft:#a9d5dc}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,'Noto Sans KR',sans-serif}button,select{font:inherit}button{cursor:pointer}
@@ -109,6 +109,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 #settingsPanel input::placeholder,#settingsPanel textarea::placeholder{color:#627c8b;opacity:1}
 #settingsPanel select,#settingsPanel input:not([type=checkbox]),#settingsPanel textarea{color:#123d55 !important;background:#fff !important}
 </style>
+<style id="blDockLabels20261025">#oceanDock button{line-height:1.25;word-break:keep-all;text-align:center}#oceanDock button[data-tab="settings"]{font-size:clamp(9px,2.3vw,11px)}#oceanDock button .ocean-icon{line-height:1.3}</style>
 <style id="blRecordToastYellowFix">
 /* Explicitly override global light-theme button and panel rules. */
 #blDiveRecordToast{background:#ffdb32 !important;color:#27200a !important;border:2px solid #b17b00 !important;box-shadow:0 3px 13px rgba(49,32,0,.32) !important;opacity:1 !important;z-index:96 !important;}
@@ -144,13 +145,19 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 @keyframes blPoke3DJolt{0%,100%{transform:translate(0,0)}12%{transform:translate(-4px,2px)}24%{transform:translate(4px,-3px)}36%{transform:translate(-3px,-1px)}48%{transform:translate(4px,2px)}60%{transform:translate(-3px,2px)}72%{transform:translate(2px,-2px)}84%{transform:translate(-1px,1px)}}
 #threeView.blPokeTremble{animation:blPoke3DJolt .65s ease-in-out 1!important}
 </style>
+<style id="blIncomingChatAlertStyle">
+#blIncomingChatAlert{position:fixed;z-index:210;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(370px,calc(100vw - 24px));background:#fff2aa!important;color:#243c42!important;border:2px solid #e6b64b!important;border-radius:14px;padding:10px 12px;box-shadow:0 6px 22px #173b5550;display:none;align-items:center;gap:8px;pointer-events:none;font-size:12px}
+#blIncomingChatAlert.blVisible{display:flex!important}#blIncomingChatAlert .blChatAlertText{flex:1;min-width:0;overflow:hidden}#blIncomingChatAlert strong,#blIncomingChatAlert .blChatAlertBody{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#blIncomingChatAlert strong{font-size:12px;color:#2c3932}#blIncomingChatAlert .blChatAlertBody{color:#46585a;margin-top:2px}
+#blIncomingChatAlert button{pointer-events:auto;border:0!important;background:#196b83!important;color:white!important;padding:7px 10px!important;min-height:32px;border-radius:9px;font-size:12px}
+#blChatToggle .blUnreadMark{display:inline-block;margin-left:4px;border-radius:99px;padding:1px 6px;background:#ffce46;color:#373013;font-weight:900}
+</style>
 </head>
 <body>
 <div class="shell">
 <header>
 <div>
-<h1>🌊 BLUE LOG <span style="color:#95f6e3">· OCEAN QUEST</span></h1>
-<small>투명한 바다를 헤엄치며 발견을 기록해요</small>
+<h1>🌊 BLUE LOG <span style="color:#95f6e3">· FREE DIVING · STATIC</span></h1>
+<small aria-hidden="true" style="display:none!important"></small>
 </div>
 <div class="topActions" role="group" aria-label="게임 표시 설정"><select id="language" aria-label="언어 선택" title="언어 선택"><option value="ko">🇰🇷 한국어</option><option value="en">🇺🇸 English</option><option value="ja">🇯🇵 日本語</option><option value="zh">🇨🇳 简体中文</option><option value="es">🇪🇸 Español</option><option value="fr">🇫🇷 Français</option><option value="id">🇮🇩 Indonesia</option><option value="vi">🇻🇳 Tiếng Việt</option></select><button id="viewMode" type="button">🎮 3D 보기</button><button id="sound" type="button">🔇 소리 켜기</button></div>
 </header>
@@ -232,7 +239,7 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 <div class="stat"><span>희귀 생물 발견</span><b id="rares">0회</b></div>
 <button id="shell" style="width:100%;display:none">🐚 뿔소라 관찰하기</button>
 <p class="muted">희귀 생물을 만나면 촬영하고, 생물을 터치해 위험도와 관찰 요령을 볼 수 있어요.</p></div>
-<div class="panel" id="settingsPanel"><h2>⚙️ 알림 및 조작 설정</h2><p class="desc">시뮬레이션 시간 알림입니다. 실제 STA 기록과는 별도이며, 물속 안전을 판단하지 않습니다.</p>
+<div class="panel" id="settingsPanel"><h2>⚙️ 스태틱 연습 설정</h2><p class="desc">시뮬레이션 시간 알림입니다. 실제 STA 기록과는 별도이며, 물속 안전을 판단하지 않습니다.</p>
 <label for="alertEvery">시간 알림 주기</label><select id="alertEvery"><option value="0">사용 안 함</option><option value="15">15초마다</option><option value="30">30초마다</option><option value="60">1분마다</option><option value="90">1분 30초마다</option><option value="120">2분마다</option><option value="300">5분마다</option></select>
 <div class="checks"><label><input id="alertVoice" type="checkbox"> 음성 안내</label><label><input id="alertVibrate" type="checkbox"> 진동</label><label><input id="alertText" type="checkbox"> 화면 안내</label></div>
 <label for="thresholdTime">특정 시간 도달 시 안내(초)</label><input id="thresholdTime" type="number" min="0" max="3600" value="60">
@@ -256,16 +263,16 @@ body.ocean-tab-open #settingsPanel p, body.ocean-tab-open #settingsPanel .desc {
 <div class="panel" id="ownedGearPanel"><h2>🎒 내가 보유한 장비</h2><p class="desc">구매한 장비를 착용하거나 벗고, 배·요트·크루즈를 여러 대 동시에 띄울 수 있어요.</p><div id="ownedGearBody"></div></div>
 </div>
 </div>
-<div class="footer">⚠️ 이 게임은 바다 감상 및 생태 학습용입니다. 실제 프리다이빙에서는 과호흡, 혼자 잠수, 무리한 기록 경쟁이 위험합니다. 생물과 지형은 대표적인 특징을 바탕으로 재해석했으며 실제 현장 상황과 다를 수 있습니다. 뿔소라 등 수집 요소는 게임 안의 가상 설정입니다.</div>
+<div class="footer">⚠️ 이 게임은 프리다이빙 스태틱 연습용 게임입니다. 스태틱 연습과 기록을 재미있게 관리해 보세요. 실제 숨참기 연습은 반드시 안전요원이 지켜보는 환경에서 진행하고, 혼자 연습하거나 과호흡하지 마세요.</div>
 <div class="credit">기획·개발 <strong>박혜영</strong> · <a href="mailto:bhy960822@gmail.com">bhy960822@gmail.com</a></div>
 </div>
 <div id="oceanBackdrop"></div><div id="oceanTabHead"><strong id="oceanTabTitle"></strong><button id="oceanTabClose" type="button">✕ 닫기</button></div><nav id="oceanDock" aria-label="하단 게임 메뉴">
-<button type="button" data-tab="explore"><span class="ocean-icon">🗺️</span>탐험</button>
-<button type="button" data-tab="dive"><span class="ocean-icon">📊</span>기록·다이버</button>
+<button type="button" data-tab="dive"><span class="ocean-icon">📊</span>기록</button>
+<button type="button" data-tab="social"><span class="ocean-icon">👥</span>다이버</button>
 <button type="button" data-tab="items"><span class="ocean-icon">🧺</span>수집</button>
 <button type="button" data-tab="shop"><span class="ocean-icon">🛍️</span>상점</button>
 <button type="button" data-tab="gear"><span class="ocean-icon">🎒</span>내 장비</button>
-<button type="button" data-tab="settings"><span class="ocean-icon">⚙️</span>설정</button>
+<button type="button" data-tab="settings"><span class="ocean-icon">⚙️</span>스태틱 연습 설정</button>
 </nav>
 <div class="modal" id="modal"><div class="sheet"><button id="close" class="close">✕</button><div id="modalbody"></div></div></div>
 <script>
@@ -453,18 +460,50 @@ function renderShop(){
  const reset=document.createElement('button');reset.type='button';reset.textContent='↩ 모든 착용 장비를 기본으로 (선박은 별도 유지)';reset.style.cssText='width:100%;margin-top:8px;padding:10px;background:#d2eefc;color:#174760;font-size:12px';reset.onclick=()=>{for(const [cat] of managedCats)delete gearState.equipped[cat];saveGear();renderShop();drawCharacterPreview();notify('기본 장비로 돌아왔어요.')};manager.appendChild(reset);const ownedBody=document.getElementById('ownedGearBody');if(ownedBody){ownedBody.replaceChildren();ownedBody.appendChild(manager)}else shop.appendChild(manager);
  const selectors=document.createElement('div');selectors.className='blShopFilters';selectors.style.cssText='display:flex;gap:5px;overflow-x:auto;padding:6px 0 10px;scrollbar-width:thin';
  const productArea=document.createElement('div');productArea.className='shopGrid';shop.append(selectors,productArea);
+ const previewPanel=document.createElement('section');previewPanel.id='blShopItemPreview';previewPanel.style.cssText='display:none;margin:8px 0;padding:11px;border:2px solid #73bcda;border-radius:13px;background:#f4fcff;color:#15435b';
+ shop.insertBefore(previewPanel,productArea);
+ function showItemPreview(g,own,equipped){
+   previewPanel.style.display='block';previewPanel.replaceChildren();
+   const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+   const pic=document.createElement('canvas');pic.width=142;pic.height=142;pic.style.cssText='width:112px;height:112px;border-radius:12px;background:linear-gradient(#a4e8f2,#1c769a);flex:none';
+   const inf=document.createElement('div');inf.style.cssText='flex:1;min-width:130px';
+   const title=document.createElement('strong');title.textContent=g.symbol+' '+g.name;
+   const desc=document.createElement('p');desc.style.cssText='font-size:12px;margin:8px 0';desc.textContent=own?'이미 구매한 아이템이에요.':`가격 ${g.price.toLocaleString('ko-KR')}원 · 보유 ${(Number(gearState.money)||0).toLocaleString('ko-KR')}원`;
+   inf.append(title,desc);row.append(pic,inf);previewPanel.append(row);
+   // Render the equipped illustration into a separate preview; do not save the temporary state.
+   try{
+      const prior={...gearState.equipped};const priorBoats=[...gearState.activeVessels];
+      if(g.cat==='vessel'){gearState.activeVessels=[g.id];blSyncBoats()}else gearState.equipped[g.cat]=g.id;
+      drawCharacterPreview();const source=document.getElementById('characterPreview');
+      if(source)pic.getContext('2d').drawImage(source,0,0,142,142);
+      gearState.equipped=prior;gearState.activeVessels=priorBoats;blSyncBoats();drawCharacterPreview();
+   }catch(e){pic.getContext('2d').font='65px sans-serif';pic.getContext('2d').fillText(g.symbol,38,95)}
+   const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;margin-top:10px';
+   const proceed=document.createElement('button');proceed.type='button';proceed.style.cssText='flex:1;background:#58d5ef;color:#084761';proceed.textContent=own?(equipped?'벗기 / 회수':'착용 / 띄우기'):'🛍 구매하기';
+   const close=document.createElement('button');close.type='button';close.textContent='닫기';close.style.cssText='background:#dfedf4;color:#24556a';close.onclick=()=>{previewPanel.style.display='none'};
+   actions.append(proceed,close);previewPanel.append(actions);
+   proceed.onclick=()=>{
+     if(!gearState.owned.includes(g.id)){
+       const balance=Number(gearState.money)||0;
+       if(balance<g.price){const shortfall=g.price-balance;const msg=`💸 게임머니가 부족해요! ${g.name}: ${g.price.toLocaleString('ko-KR')}원 · 보유 ${balance.toLocaleString('ko-KR')}원 · 부족 ${shortfall.toLocaleString('ko-KR')}원`;notify(msg);desc.textContent=msg;desc.style.color='#a52b29';return;}
+       if(!window.confirm(`${g.name}을(를) ${g.price.toLocaleString('ko-KR')}원에 구매하시겠습니까?\n\n예(확인) / 아니오(취소)`)){notify('구매를 취소했어요.');return;}
+       gearState.money-=g.price;gearState.owned.push(g.id);
+       notify('🛍 '+g.name+' 구매 완료!');
+     }
+     if(g.cat==='vessel'){
+       gearState.activeVessels=blActiveBoats().includes(g.id)?blActiveBoats().filter(id=>id!==g.id):[...blActiveBoats(),g.id];
+     }else if(gearState.equipped[g.cat]===g.id){delete gearState.equipped[g.cat]}else{gearState.equipped[g.cat]=g.id}
+     const nowOn=g.cat==='vessel'?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id;
+     saveGear();renderShop();drawCharacterPreview();notify(g.name+(nowOn?' 장착 완료!':' 해제 완료!'));
+   };
+ }
  const initial=shop.dataset.category||'all';
  function showCategory(cat){shop.dataset.category=cat;[...productArea.children].forEach(el=>{el.hidden=cat!=='all'&&el.dataset.cat!==cat});[...selectors.children].forEach(b=>{b.style.background=b.dataset.cat===cat?'#007ba9':'#e3f7ff';b.style.color=b.dataset.cat===cat?'white':'#18536e'})}
  for(const [key,label] of [['all','🛍 전체'],...priority.map(cat=>[cat,categoryLabels[cat]])]){const b=document.createElement('button');b.textContent=label;b.dataset.cat=key;b.type='button';b.style.cssText='flex:none;font-size:12px;padding:8px 10px;white-space:nowrap;border-radius:999px';b.onclick=()=>showCategory(key);selectors.append(b)}
  priority.flatMap(cat=>GEAR_CATALOG.filter(g=>g.cat===cat)).forEach(g=>{
   const btn=document.createElement('button');btn.type='button';const own=gearState.owned.includes(g.id),isBoat=g.cat==='vessel',equipped=isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id;
   btn.textContent=g.symbol+' '+g.name+(g.cat==='pet'?' · 자동 수집 '+g.range+'범위':'')+' · '+(isBoat?(equipped?'✅ 바다에 띄움 · 회수하기':own?'보유 · 바다에 띄우기':g.price.toLocaleString('ko-KR')+'원'):equipped?'✅ 착용 중 · 벗기':own?'착용하기':g.price.toLocaleString('ko-KR')+'원');
-  btn.onclick=()=>{
-   if(!own){if(gearState.money<g.price){notify('게임머니가 부족해요. 수집품을 먼저 판매해 보세요.');return}gearState.money-=g.price;gearState.owned.push(g.id)}
-   if(isBoat){if(blActiveBoats().includes(g.id))gearState.activeVessels=blActiveBoats().filter(id=>id!==g.id);else gearState.activeVessels=[...blActiveBoats(),g.id];}
-   else if(equipped)delete gearState.equipped[g.cat];else gearState.equipped[g.cat]=g.id;
-   saveGear();renderShop();drawCharacterPreview();notify(isBoat?(blActiveBoats().includes(g.id)?'바다에 선박을 띄웠어요.':'선박을 회수했어요.'):'장비 설정을 변경했어요: '+g.name);
-  };
+  btn.onclick=()=>showItemPreview(g,gearState.owned.includes(g.id),isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id);
   btn.dataset.cat=g.cat;productArea.appendChild(btn)
  });showCategory(initial);
  if(ownedBody){
@@ -2214,8 +2253,8 @@ const certification=document.getElementById('certPanel');
 if(worldwide&&certification)side.insertBefore(worldwide,certification);
 // In the merged tab, show record panels first, then online divers and profile.
 const recordPanel=panels[1],staPanel=panels[3];if(recordPanel&&staPanel&&worldwide&&certification){side.insertBefore(recordPanel,certification);side.insertBefore(staPanel,certification);side.insertBefore(worldwide,certification);}
-const groups={explore:[0,5],dive:[1,3,2,4],items:[7],shop:[8],gear:[9],settings:[6]};
-const titles={explore:'🗺️ 탐험 장소 · 발견',dive:'📊 기록 · 다이버 프로필 · 온라인',items:'🧺 수집 인벤토리',shop:'🛍️ 프리다이빙 장비 상점',gear:'🎒 내가 보유한 장비',settings:'⚙️ 알림 · 조작 설정'};
+const groups={dive:[1,3],social:[4,2],items:[7],shop:[8],gear:[9],settings:[6]};
+const titles={dive:'📊 잠수 · 스태틱 기록',social:'👥 다이버 · 실시간 접속',items:'🧺 수집 인벤토리',shop:'🛍️ 프리다이빙 장비 상점',gear:'🎒 내가 보유한 장비',settings:'⚙️ 스태틱 연습 설정'};
 let current=null;
 function close(){document.body.classList.remove('ocean-tab-open');document.querySelectorAll('#oceanDock button').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-expanded','false')});current=null}
 function open(id){if(current===id){close();return;}current=id;panels.forEach((p,i)=>p.classList.toggle('ocean-visible',groups[id].includes(i)));document.getElementById('oceanTabTitle').textContent=titles[id];document.body.classList.add('ocean-tab-open');side.scrollTop=0;document.querySelectorAll('#oceanDock button').forEach(b=>{const active=b.dataset.tab===id;b.classList.toggle('selected',active);b.setAttribute('aria-expanded',String(active))});}
@@ -2251,7 +2290,7 @@ padding:9px 6px;font-weight:800;font-size:12px}
 (function(){
 const select=document.getElementById('language');
 const labels={
-ko:['투명한 바다를 헤엄치며 발견을 기록해요','📷 수중 사진 찍기','🗂 내 사진 도감','🤿 입수','🌤 수면 복귀','↷ 앞으로','↶ 뒤로','✕ 닫기','탐험','기록·다이버','수집','상점','내 장비','설정','🎮 3D 보기','🔊 사운드 켜기'],
+ko:['스태틱 훈련도 게임처럼 즐겁게, 나만의 기록을 남겨요.','📷 수중 사진 찍기','🗂 내 사진 도감','🤿 입수','🌤 수면 복귀','↷ 앞으로','↶ 뒤로','✕ 닫기','탐험','기록·다이버','수집','상점','내 장비','설정','🎮 3D 보기','🔊 사운드 켜기'],
 en:['Explore clear blue oceans and discover marine life','📷 Take photo','🗂 Photo album','🤿 Dive','🌤 Surface','↷ Forward','↶ Back','✕ Close','Explore','Log · Divers','Items','Shop','My Gear','Settings','🎮 3D view','🔊 Sound on'],
 ja:['透明な海を泳いで海の生き物を発見しよう','📷 水中写真','🗂 写真図鑑','🤿 潜る','🌤 水面へ','↷ 前へ','↶ 後ろへ','✕ 閉じる','探索','記録','収集','ショップ','ダイバー','設定','🎮 3D表示','🔊 音をオン'],
 zh:['探索清澈海洋，发现海洋生物','📷 水下拍照','🗂 照片图鉴','🤿 下潜','🌤 返回水面','↷ 前进','↶ 后退','✕ 关闭','探索','记录','收集','商店','潜水员','设置','🎮 3D视图','🔊 开启声音'],
@@ -2261,7 +2300,7 @@ id:['Jelajahi laut jernih dan temukan kehidupan laut','📷 Foto bawah air','�
 vi:["Khám phá đại dương trong xanh và ghi lại những sinh vật bạn tìm thấy", "📷 Chụp ảnh dưới nước", "🗂 Bộ sưu tập ảnh", "🤿 Lặn xuống", "🌤 Lên mặt nước", "↷ Tiến", "↶ Lùi", "✕ Đóng", "Khám phá", "Nhật ký", "Vật phẩm", "Cửa hàng", "Thợ lặn", "Cài đặt", "🎮 Chế độ 3D", "🔊 Bật âm thanh"]
 };
 const sel=['header small','#photo','#albumBtn','#genter','#gsurface','#joyAscend','#joyDescend','#oceanTabClose'];
-const tabs=['explore','dive','items','shop','social','settings'];
+const tabs=['dive','social','items','shop','gear','settings'];
 const options=Array.from(document.querySelectorAll('#place option'));
 const originalPlaces=options.map(o=>o.textContent);
 const maps={
@@ -2279,7 +2318,7 @@ function apply(){
  document.querySelectorAll('#oceanDock button').forEach(b=>{
   const i=tabs.indexOf(b.dataset.tab);if(i<0)return;
   const nodes=Array.from(b.childNodes).filter(n=>n.nodeType===3);
-  if(nodes.length)nodes[nodes.length-1].textContent=words[i+8];
+  if(nodes.length){const tabWords={ko:['기록','다이버','수집','상점','내 장비','스태틱 연습 설정'],en:['Records','Divers','Items','Shop','My Gear','Static Practice Settings'],ja:['記録','ダイバー','収集','ショップ','装備','スタティック練習設定'],zh:['记录','潜水员','收集','商店','我的装备','静态练习设置'],es:['Registros','Buceadores','Colección','Tienda','Mi equipo','Configuración estática'],fr:['Records','Plongeurs','Collection','Boutique','Mon équipement','Réglages statiques'],id:['Catatan','Penyelam','Koleksi','Toko','Perlengkapan','Pengaturan latihan statis'],vi:['Nhật ký','Thợ lặn','Vật phẩm','Cửa hàng','Thiết bị','Cài đặt luyện tập tĩnh']};nodes[nodes.length-1].textContent=tabWords[lang][i];}
  });
  const view=document.getElementById('viewMode');
  if(view)view.textContent=view.textContent.includes('2D')?'↩ 2D':words[14];
@@ -2338,7 +2377,7 @@ function walk(root,lang){
 function apply(){if(busy)return;busy=true;try{
  const lang=language.value;
  document.querySelectorAll('.side, .footer, .credit, .panel, #oceanTabHead, .nav').forEach(el=>walk(el,lang));
- const name=document.getElementById('oceanTabTitle');if(name){const t={explore:8,dive:9,items:10,shop:11,gear:12,settings:13};const btn=document.querySelector('#oceanDock button.selected');if(btn){const words={ko:['탐험','기록·다이버','수집','상점','내 장비','설정'],en:['Explore','Log · Divers','Items','Shop','My Gear','Settings'],ja:['探索','記録','収集','ショップ','ダイバー','設定'],zh:['探索','记录','收集','商店','潜水员','设置'],es:['Explorar','Registro','Colección','Tienda','Buceadores','Ajustes'],fr:['Explorer','Journal','Collection','Boutique','Plongeurs','Réglages'],id:['Jelajah','Catatan','Koleksi','Toko','Penyelam','Pengaturan'],vi:['Khám phá','Nhật ký','Vật phẩm','Cửa hàng','Thợ lặn','Cài đặt']};let idx=Object.keys(t).indexOf(btn.dataset.tab);if(idx>=0)name.textContent=words[lang][idx];}}
+ const name=document.getElementById('oceanTabTitle');if(name){const active=document.querySelector('#oceanDock button.selected');if(active){const heading={ko:{dive:'📊 잠수 · 스태틱 기록',social:'👥 다이버 · 실시간 접속',items:'🧺 수집 인벤토리',shop:'🛍️ 프리다이빙 장비 상점',gear:'🎒 내가 보유한 장비',settings:'⚙️ 스태틱 연습 설정'},en:{dive:'📊 Dive · Static Records',social:'👥 Divers · Online',items:'🧺 Collections',shop:'🛍️ Diving Shop',gear:'🎒 My Gear',settings:'⚙️ Static Practice Settings'}};const dict=heading[lang]||heading.en;name.textContent=dict[active.dataset.tab]||name.textContent;}}
  }finally{busy=false}}
 language.addEventListener('change',()=>{setTimeout(apply,0)});
 // Batch translations: don't recursively react to the text nodes we just translated.
@@ -2554,7 +2593,23 @@ if(typeof navigator.vibrate==='function')try{navigator.vibrate(100)}catch(e){}
 const chatBox=document.createElement('section');chatBox.id='blueChat';chatBox.innerHTML=`<div class="blChatHead"><b>💬 다이버 실시간 채팅</b><button type="button" id="blChatToggle">접기</button></div><div class="blChatTarget"><label for="blChatRecipient">대화 상대</label><select id="blChatRecipient"><option value="">🌍 같은 바다 전체</option></select></div><div id="blChatMessages" role="log" aria-live="polite"></div><form id="blChatForm"><input id="blChatInput" maxlength="220" autocomplete="off" placeholder="메시지를 입력하세요" aria-label="채팅 메시지"><button type="submit">전송</button></form><small>같은 바다 전체 채팅 또는 현재 접속한 다이버에게 1:1 메시지 · 현재 접속 중일 때만 전달</small>`;
 document.body.append(chatBox);if(matchMedia("(max-width:760px)").matches){chatBox.classList.add("collapsed");chatBox.querySelector("#blChatToggle").textContent="펼치기"}
 const chatList=chatBox.querySelector('#blChatMessages'),chatTo=chatBox.querySelector('#blChatRecipient'),chatInput=chatBox.querySelector('#blChatInput');
-chatBox.querySelector('#blChatToggle').onclick=()=>{chatBox.classList.toggle('collapsed');chatBox.querySelector('#blChatToggle').textContent=chatBox.classList.contains('collapsed')?'펼치기':'접기'};
+// Incoming chat toast, also visible when the chat window is collapsed.
+const chatAlert=document.createElement('div');chatAlert.id='blIncomingChatAlert';chatAlert.setAttribute('role','status');chatAlert.setAttribute('aria-live','polite');
+chatAlert.innerHTML='<span aria-hidden="true">💬</span><div class="blChatAlertText"><strong id="blIncomingChatName"></strong><span class="blChatAlertBody" id="blIncomingChatText"></span></div><button id="blIncomingChatOpen" type="button">채팅 보기</button>';
+document.body.append(chatAlert);
+let chatAlertTimer=null,chatUnread=0;
+function updateChatUnread(){const t=chatBox.querySelector('#blChatToggle');if(!t)return;t.replaceChildren(document.createTextNode(chatBox.classList.contains('collapsed')?'펼치기':'접기'));if(chatUnread&&chatBox.classList.contains('collapsed')){const badge=document.createElement('span');badge.className='blUnreadMark';badge.textContent=chatUnread>99?'99+':String(chatUnread);t.append(badge)}}
+function openChatFromAlert(){chatBox.classList.remove('collapsed');chatUnread=0;updateChatUnread();chatAlert.classList.remove('blVisible');clearTimeout(chatAlertTimer);chatList.scrollTop=chatList.scrollHeight}
+chatAlert.querySelector('#blIncomingChatOpen').onclick=openChatFromAlert;
+function incomingChatNotify(m){if(!m||m.fromId===me||!String(m.text||'').trim())return;
+ if(chatBox.classList.contains('collapsed'))chatUnread++;
+ updateChatUnread();
+ chatAlert.querySelector('#blIncomingChatName').textContent=(m.private?'🔒 1:1 · ':'')+String(m.fromNick||'다이버').slice(0,30)+'님이 메시지를 보냈어요';
+ chatAlert.querySelector('#blIncomingChatText').textContent=String(m.text||'').slice(0,120);
+ chatAlert.classList.add('blVisible');clearTimeout(chatAlertTimer);chatAlertTimer=setTimeout(()=>chatAlert.classList.remove('blVisible'),4500);
+}
+
+chatBox.querySelector('#blChatToggle').onclick=()=>{chatBox.classList.toggle('collapsed');if(!chatBox.classList.contains('collapsed'))chatUnread=0;updateChatUnread()};
 function chatLine(m){const div=document.createElement('div');div.className='blMessage';const b=document.createElement('b');b.textContent=m.fromNick||'안내';const t=document.createElement('span');t.textContent=' '+(m.private?'🔒 1:1 ':'')+(m.text||'');div.append(b,t);chatList.append(div);while(chatList.childElementCount>65)chatList.firstChild.remove();chatList.scrollTop=chatList.scrollHeight}
 function chatRoster(){const current=chatTo.value;chatTo.replaceChildren();const all=document.createElement('option');all.value='';all.textContent='🌍 같은 바다 전체';chatTo.append(all);for(const p of players){if(p.id===me)continue;const op=document.createElement('option');op.value=p.id;op.textContent='🔒 '+p.nick+(Number(p.spot)===myPlace()?' · 같은 바다':' · 다른 바다');chatTo.append(op)}chatTo.value=[...chatTo.options].some(o=>o.value===current)?current:''}
 chatBox.querySelector('#blChatForm').onsubmit=e=>{e.preventDefault();const value=chatInput.value.trim();if(!value)return;if(!me){chatLine({fromNick:'안내',text:'서버 연결 후 채팅할 수 있어요.'});return}send({type:'chat',text:value,to:chatTo.value||null});chatInput.value=''};
@@ -2615,7 +2670,7 @@ function start(){clearTimeout(reconnect);const proto=location.protocol==='https:
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
  if(m.type==='welcome'){me=m.id;if(m.token)localStorage.setItem(key,m.token);syncSTA();updatePanel()}
  if(m.type==='players'){players=Array.isArray(m.players)?m.players:[];updatePanel();chatRoster()}
-  if(m.type==='chat'){if(m.text===pokeTag){receivePoke(m)}else{chatLine(m)}}
+  if(m.type==='chat'){if(m.text===pokeTag){receivePoke(m)}else{chatLine(m);incomingChatNotify(m)}}
   if(m.type==='chat_error'){chatLine({fromNick:'안내',text:m.message||'메시지를 보낼 수 없어요.'})}
  if(m.type==='inspect'){const box=document.getElementById('blProfileContent');box.replaceChildren();const p=players.find(q=>q.id===m.id);const entries=[['닉네임',m.nick||'다이버'],['현재 위치',p?place(p):'오프라인'],['착용 장비',Object.values(m.equipped||{}).join(' · ')||'기본 장비'],['잠수 연습',String(m.stats?.dives||0)+'회 / 평균 '+(m.stats?.average||0)+'초 / 최장 '+(m.stats?.longest||0)+'초'],['스태틱(STA)',m.sta?'최고 '+m.sta.best+'초 · 평균 '+m.sta.average+'초 · '+m.sta.count+'회':'비공개']];for(const [k,v] of entries){const row=document.createElement('p');row.textContent=k+': '+v;box.append(row)}if(m.id===me)renderOwnStaControls();else addPokeButton(m.id)}
  };
