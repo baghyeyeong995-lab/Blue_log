@@ -474,7 +474,7 @@ function renderShop(){
    const pic=document.createElement('canvas');pic.width=142;pic.height=142;pic.style.cssText='width:112px;height:112px;border-radius:12px;background:linear-gradient(#a4e8f2,#1c769a);flex:none';
    const inf=document.createElement('div');inf.style.cssText='flex:1;min-width:130px';
    const title=document.createElement('strong');title.textContent=g.symbol+' '+g.name;
-   const desc=document.createElement('p');desc.style.cssText='font-size:12px;margin:8px 0';desc.textContent=own?'이미 구매한 아이템이에요.':`가격 ${g.price.toLocaleString('ko-KR')}원 · 보유 ${(Number(gearState.money)||0).toLocaleString('ko-KR')}원`;
+   const desc=document.createElement('p');desc.style.cssText='font-size:12px;margin:8px 0';desc.textContent=own?'✅ 보유 중 · 추가 구매할 수 없는 아이템입니다.':`가격 ${g.price.toLocaleString('ko-KR')}원 · 보유 ${(Number(gearState.money)||0).toLocaleString('ko-KR')}원`;
    inf.append(title,desc);row.append(pic,inf);previewPanel.append(row);
    // Render the equipped illustration into a separate preview; do not save the temporary state.
    try{
@@ -485,7 +485,7 @@ function renderShop(){
       gearState.equipped=prior;gearState.activeVessels=priorBoats;blSyncBoats();drawCharacterPreview();
    }catch(e){pic.getContext('2d').font='65px sans-serif';pic.getContext('2d').fillText(g.symbol,38,95)}
    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;margin-top:10px';
-   const proceed=document.createElement('button');proceed.type='button';proceed.style.cssText='flex:1;background:#58d5ef;color:#084761';proceed.textContent=own?(equipped?'벗기 / 회수':'착용 / 띄우기'):'🛍 구매하기';
+   const proceed=document.createElement('button');proceed.type='button';proceed.style.cssText='flex:1;background:#58d5ef;color:#084761';proceed.textContent=own?(equipped?'✅ 보유 중 · 벗기 / 회수':'✅ 보유 중 · 착용 / 띄우기'):'🛍 구매하기';
    const close=document.createElement('button');close.type='button';close.textContent='닫기';close.style.cssText='background:#dfedf4;color:#24556a';close.onclick=()=>{previewPanel.style.display='none'};
    actions.append(proceed,close);previewPanel.append(actions);
    function completePurchaseAndEquip(){
@@ -533,7 +533,7 @@ function renderShop(){
  for(const [key,label] of [['all','🛍 전체'],...priority.map(cat=>[cat,categoryLabels[cat]])]){const b=document.createElement('button');b.textContent=label;b.dataset.cat=key;b.type='button';b.style.cssText='flex:none;font-size:12px;padding:8px 10px;white-space:nowrap;border-radius:999px';b.onclick=()=>showCategory(key);selectors.append(b)}
  priority.flatMap(cat=>GEAR_CATALOG.filter(g=>g.cat===cat)).forEach(g=>{
   const btn=document.createElement('button');btn.type='button';const own=gearState.owned.includes(g.id),isBoat=g.cat==='vessel',equipped=isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id;
-  btn.textContent=g.symbol+' '+g.name+(g.cat==='pet'?' · 자동 수집 '+g.range+'범위':'')+' · '+(isBoat?(equipped?'✅ 바다에 띄움 · 회수하기':own?'보유 · 바다에 띄우기':g.price.toLocaleString('ko-KR')+'원'):equipped?'✅ 착용 중 · 벗기':own?'착용하기':g.price.toLocaleString('ko-KR')+'원');
+  btn.textContent=g.symbol+' '+g.name+(g.cat==='pet'?' · 자동 수집 '+g.range+'범위':'')+' · '+(own?('✅ 보유 중 · '+(isBoat?(equipped?'회수하기':'바다에 띄우기'):(equipped?'벗기':'착용하기'))):g.price.toLocaleString('ko-KR')+'원');
   btn.onclick=()=>showItemPreview(g,gearState.owned.includes(g.id),isBoat?blActiveBoats().includes(g.id):gearState.equipped[g.cat]===g.id,btn);
   btn.dataset.cat=g.cat;productArea.appendChild(btn)
  });showCategory(initial);
