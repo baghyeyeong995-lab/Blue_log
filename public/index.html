@@ -1116,16 +1116,74 @@ function drawCoastLandmark(t){
  ctx.fillStyle='#05384fba';ctx.beginPath();ctx.roundRect(25,260,Math.min(360,160+names[k].length*16),48,12);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 23px system-ui';ctx.fillText('📍 '+names[k],39,292);
 }
 
-const blBoatCoins=[];let blBoatLastDrop=0;
-function blBoatCoinTick(t){
- const id=gearState.equipped.vessel;const tier=id==='boat_cruise'?3:id==='boat_yacht'?2:id==='boat_small'?1:0;
- if(!tier){blBoatCoins.length=0;return;}
- const interval=tier===3?1800:tier===2?3800:7000;
- if(t-blBoatLastDrop>interval){blBoatLastDrop=t;const amount=tier===3?8:tier===2?4:1;
- for(let i=0;i<Math.min(amount,12);i++)blBoatCoins.push({x:710+(Math.random()-.5)*180,y:356,created:t+i*85,value:tier===3?24:tier===2?18:12});
- if(blBoatCoins.length>65)blBoatCoins.splice(0,blBoatCoins.length-65);
+const blBoatCoins=[];
+// Client-only shared vessel dividends: works with the existing server's
+// player list, positions, diving state and equipped vessel. No server edits.
+const blVesselPaymentClocks=new Map();
+// Small, persistent surface-only hint. It never intercepts game controls.
+function blBoatNearbyHint(show){
+ let el=document.getElementById('blBoatNearbyHint');
+ if(!el){
+   const game=document.querySelector('.game');if(!game)return;
+   el=document.createElement('div');el.id='blBoatNearbyHint';
+   el.textContent='🪙 배·요트·크루즈 근처에서는 코인이 자동으로 모여요!';
+   el.setAttribute('role','status');
+   el.style.cssText='position:absolute;top:143px;left:50%;transform:translateX(-50%);z-index:12;max-width:calc(100% - 24px);width:max-content;padding:6px 10px;border:1px solid #ffed98;border-radius:999px;background:rgba(39,60,73,.88);color:#fff2ab;font:700 11px/1.35 system-ui,sans-serif;text-align:center;pointer-events:none;box-shadow:0 2px 10px #001c3055;display:none';
+   game.appendChild(el);
  }
- for(let i=blBoatCoins.length-1;i>=0;i--){if(t-blBoatCoins[i].created>17000)blBoatCoins.splice(i,1)}
+ el.style.display=show?'block':'none';
+}
+function blBoatCoinTick(t){
+ for(let i=blBoatCoins.length-1;i>=0;i--)if(t-blBoatCoins[i].created>2200)blBoatCoins.splice(i,1);
+ if(session||phase!=='surface'){blBoatNearbyHint(false);return;}
+ const swimmer=surfacePosition();
+ if(Math.abs(swimmer.x-710)>90){blBoatNearbyHint(false);return;}
+ const nearby=window.BlueLogSync?.getPlayers?.()||[];
+ const connected=!!window.BlueLogSync?.isConnected?.();
+ const allVessels=[];
+ // In multiplayer, include each currently present surface owner's equipped boat.
+ if(connected){
+   for(const p of nearby){if(!p.diving&&p.equipped?.vessel)allVessels.push({key:'peer:'+p.id,id:p.equipped.vessel,owner:String(p.nick||'다이버')});}
+ }
+ const mine=gearState.equipped.vessel;
+ if(mine)allVessels.push({key:'mine',id:mine,owner:'내 배'});
+ blBoatNearbyHint(allVessels.some(boat=>['boat_small','boat_yacht','boat_cruise'].includes(boat.id)));
+ const activeKeys=new Set();
+ for(const boat of allVessels){
+   const tier=boat.id==='boat_cruise'?3:boat.id==='boat_yacht'?2:boat.id==='boat_small'?1:0;
+   if(!tier)continue;
+   activeKeys.add(boat.key);
+   const interval=tier===3?1800:tier===2?3800:7000;
+   const previous=blVesselPaymentClocks.get(boat.key);
+   if(previous==null){blVesselPaymentClocks.set(boat.key,t);continue;}
+   if(t-previous<interval)continue;
+   blVesselPaymentClocks.set(boat.key,t);
+   const count=tier===3?8:tier===2?4:1;
+   blCreditBoatIncome(count*(tier===3?24:tier===2?18:12),count,boat.owner);
+   blShowBoatRewardCoins(count,t);
+ }
+ for(const key of blVesselPaymentClocks.keys())if(!activeKeys.has(key))blVesselPaymentClocks.delete(key);
+}
+let blBoatAutoCollectNoticeAt=0;
+function blCreditBoatIncome(money,count,owner){
+ money=Math.max(0,Math.min(5000,Number(money)||0));
+ count=Math.max(0,Math.min(24,Number(count)||0));
+ if(!money||!count)return;
+ inventory.coin=(Number(inventory.coin)||0)+count;
+ inventory.total=(Number(inventory.total)||0)+count;
+ gearState.money=(Number(gearState.money)||0)+money;
+ try{localStorage.setItem('blue_inventory',JSON.stringify(inventory))}catch(e){}
+ saveGear();updateHUD();
+ const t=performance.now();
+ if(t-blBoatAutoCollectNoticeAt>1200){blBoatAutoCollectNoticeAt=t;notify('🪙 '+owner+' 근처 수면 보상 +'+money.toLocaleString('ko-KR')+'원')}
+}
+function blShowBoatRewardCoins(amount,t){
+ for(let i=0;i<Math.min(amount,12);i++)blBoatCoins.push({x:710+(Math.random()-.5)*130,created:t+i*30});
+ if(blBoatCoins.length>75)blBoatCoins.splice(0,blBoatCoins.length-75);
+}
+function blReceiveVesselIncome(message){
+ // Client computes dividends from synchronized vessel appearances. Ignore
+ // server payout messages here to avoid duplicate rewards on updated servers.
 }
 function blDrawBoatCoins(t){blBoatCoinTick(t);for(const c of blBoatCoins){const age=Math.max(0,t-c.created),x=c.x+Math.sin(age*.003)*12,y=356+Math.min(220,age*.018);ctx.save();ctx.globalAlpha=Math.min(1,(17000-age)/1900);ctx.translate(x,y);ctx.rotate(Math.sin(t*.004)*.28);ctx.shadowColor='#ffe466';ctx.shadowBlur=12;ctx.fillStyle='#ffce37';ctx.strokeStyle='#fff1a3';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,11,11,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#8a6200';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('₩',0,5);ctx.restore()}}
 function drawSurface(t){
@@ -1261,7 +1319,7 @@ let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean
 canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY}});
 canvas.addEventListener('pointerup',e=>{
   if(!pointerDown) return; const r=canvas.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H; const dx=e.clientX-pointerDown.x, dy=e.clientY-pointerDown.y;
-  if(!session){const ci=blBoatCoins.findIndex(c=>Math.hypot(c.x-x,(356+Math.min(220,Math.max(0,performance.now()-c.created)*.018))-y)<28);if(ci>=0){const c=blBoatCoins.splice(ci,1)[0];inventory.coin=(inventory.coin||0)+1;inventory.total=(inventory.total||0)+1;gearState.money=(Number(gearState.money)||0)+c.value;localStorage.setItem('blue_inventory',JSON.stringify(inventory));saveGear();renderShop();updateHUD();notify('🪙 보트 코인 +'+c.value+'원!');pointerDown=null;return}}
+  // Vessel coins are granted automatically to every eligible surface diver. Tapping does nothing.
   if(Math.hypot(dx,dy)>18){ diver.vx-=dx*.08; if(session) diver.vy-=dy*.05; pointerDown=null; return; }
   let best=null,dist=1e9; for(const ent of window.visibleEntities||[]){ const q=Math.hypot(ent.x-x,ent.y-y); if(q<Math.max(38,ent.o.size*1.2) && q<dist){best=ent.o; dist=q;}}
   const tapped=collectibles.filter(c=>!c.taken).map(c=>({c,p:worldToScreen(c.x,c.y,c.z)}))
@@ -2481,7 +2539,7 @@ const tick=setInterval(()=>{if(ws?.readyState!==1)return;
  const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'바다':'바다',x:q.x,y:q.y,z:q.z,dir:q.dir,swim:q.swim,navX:window.BL3DCamera?.x||0,navZ:window.BL3DCamera?.z||0,yaw:window.BL3DCamera?.yaw||0,diving:d.diving,depth:d.depth});
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
-window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA,updateNickname:(name)=>send({type:'profile',nick:String(name||'바다 탐험가').trim().slice(0,16)||'바다 탐험가'})};
+window.BlueLogSync={isConnected:()=>Boolean(me&&ws?.readyState===WebSocket.OPEN),draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA,updateNickname:(name)=>send({type:'profile',nick:String(name||'바다 탐험가').trim().slice(0,16)||'바다 탐험가'})};
 function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
