@@ -2634,10 +2634,28 @@ pokeQuick.style.cssText='position:absolute;z-index:14;left:50%;bottom:115px;tran
 pokeQuick.style.display='none';game.append(pokeQuick);
 let pokeTargetId=null;
 pokeQuick.onclick=()=>{if(pokeTargetId)sendPoke(pokeTargetId)};
-function pokeDistance(p){const d=typeof diver!=='undefined'?diver:null;if(!d)return Infinity;const dx=(Number(p.x)||0)-d.x,dy=(Number(p.y)||0)-d.y,dz=((Number(p.z)||.55)-(d.z||.55))*110;return Math.hypot(dx,dy,dz)}
-function pokePossible(p){if(!p||p.id===me||Number(p.spot)!==myPlace())return false;const myDive=Boolean(status().diving);if(Boolean(p.diving)!==myDive)return false;const dx=Math.abs((Number(p.x)||0)-diver.x);if(!myDive)return dx<800;return pokeDistance(p)<420}
+// Use the same symmetric distance calculation on BOTH clients, independent of camera position.
+// Surface swimmers may have different simulated y coordinates; underwater use measured depth.
+function pokeDistance(p){
+ if(typeof diver==='undefined')return Infinity;
+ const dx=(Number(p.x)||0)-diver.x;
+ const dz=((Number(p.z)||.55)-(Number(diver.z)||.55))*110;
+ const own=status();
+ return own.diving?Math.hypot(dx,dz,((Number(p.depth)||0)-own.depth)*30):Math.hypot(dx,dz);
+}
+function pokePossible(p){
+ if(!p||!me||p.id===me||Number(p.spot)!==myPlace())return false;
+ const own=status();
+ if(Boolean(p.diving)!==Boolean(own.diving))return false;
+ // Keep the button close to the other diver; do not show it across the whole ocean.
+ const dx=(Number(p.x)||0)-diver.x;
+ const dz=((Number(p.z)||.55)-(Number(diver.z)||.55))*110;
+ if(!own.diving)return Math.hypot(dx,dz)<200;
+ const depthDifference=Math.abs((Number(p.depth)||0)-own.depth);
+ return Math.hypot(dx,dz)<215&&depthDifference<6;
+}
 function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('같은 바다의 가까운 다이버에게 다가가 주세요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
-function receivePoke(m){if(m.fromId===me||!m.private)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||!pokePossible(sender))return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
+function receivePoke(m){if(m.fromId===me||!m.private||!m.fromId)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||Number(sender.spot)!==myPlace())return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
 const senderName=String(m.fromNick||sender.nick||'다이버').slice(0,30);
 window.blPokeShiverUntil=performance.now()+830;
 const threeStage=document.getElementById('threeView');if(threeStage){threeStage.classList.remove('blPokeTremble');void threeStage.offsetWidth;threeStage.classList.add('blPokeTremble');}
