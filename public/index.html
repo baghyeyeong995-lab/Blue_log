@@ -2579,6 +2579,37 @@ translateOptions();
 const game=document.querySelector('.game'),panel=document.getElementById('onlinePanel');if(!game||!panel)return;
 for(const id of ['blueLiveBadge','blueLiveToast','blueRemoteLayer','blueLiveList','blueProfileCard','blueShareSTA','blRemoteTouch','blProfile','blRemoteList','blShare'])document.getElementById(id)?.remove();
 const badge=document.createElement('button');badge.id='blueLiveBadge';badge.textContent='⚪ 서버 연결 중';document.body.append(badge);
+// Tap the green connected-player pill to see every connected diver and their live location.
+const onlinePopup=document.createElement('section');onlinePopup.id='blOnlineQuickList';onlinePopup.hidden=true;
+onlinePopup.setAttribute('aria-label','현재 접속한 다이버');
+onlinePopup.innerHTML='<div class="blOnlineQuickHead"><strong>🟢 현재 접속 중인 다이버</strong><button type="button" id="blOnlineQuickClose" aria-label="닫기">✕</button></div><div id="blOnlineQuickItems"></div>';
+document.body.append(onlinePopup);
+const quickCss=document.createElement('style');quickCss.id='blOnlineQuickCss';quickCss.textContent=`
+#blueLiveBadge{cursor:pointer!important}
+#blOnlineQuickList{position:fixed;left:12px;bottom:calc(140px + env(safe-area-inset-bottom));z-index:240;width:min(345px,calc(100vw - 24px));max-height:min(52vh,480px);overflow:auto;border:2px solid #66bdda;border-radius:17px;background:#f3fcff;color:#163b52;box-shadow:0 8px 28px #07395a73;padding:10px;font-size:13px}
+#blOnlineQuickList[hidden]{display:none!important}
+#blOnlineQuickList .blOnlineQuickHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+#blOnlineQuickList .blOnlineQuickHead button{padding:5px 10px;min-height:32px}
+#blOnlineQuickItems button{display:block;text-align:left;width:100%;margin:5px 0;padding:10px;border:1px solid #9cd6e8;border-radius:10px;background:#fff;color:#144765}
+#blOnlineQuickItems button small{display:block;color:#507789;margin-top:3px;font-weight:500}
+`;
+document.head.append(quickCss);
+document.getElementById('blOnlineQuickClose').onclick=()=>{onlinePopup.hidden=true;badge.setAttribute('aria-expanded','false')};
+function renderOnlineQuick(){
+ const holder=document.getElementById('blOnlineQuickItems');holder.replaceChildren();
+ if(!me){holder.textContent='서버에 연결하는 중이에요.';return;}
+ if(!players.length){holder.textContent='현재 접속자 정보가 없어요.';return;}
+ for(const p of players){
+  const btn=document.createElement('button');btn.type='button';
+  const name=document.createElement('strong');name.textContent='🤿 '+String(p.nick||'바다 탐험가')+(p.id===me?' (나)':'');
+  const position=document.createElement('small');position.textContent='📍 '+place(p);
+  btn.append(name,position);btn.onclick=()=>{onlinePopup.hidden=true;badge.setAttribute('aria-expanded','false');inspect(p.id)};
+  holder.append(btn);
+ }
+}
+badge.setAttribute('aria-expanded','false');badge.setAttribute('aria-label','현재 접속자 목록 보기');
+badge.onclick=()=>{onlinePopup.hidden=!onlinePopup.hidden;badge.setAttribute('aria-expanded',String(!onlinePopup.hidden));if(!onlinePopup.hidden)renderOnlineQuick()};
+
 const layer=document.createElement('div');layer.id='blRemoteTouch';game.append(layer);
 const modal=document.createElement('div');modal.id='blProfile';modal.innerHTML='<button type="button" id="blClose">닫기 ✕</button><h3>🤿 다이버 프로필</h3><div id="blProfileContent"></div>';document.body.append(modal);document.getElementById('blClose').onclick=()=>modal.classList.remove('open');
 const list=document.createElement('div');list.id='blRemoteList';panel.append(list);
@@ -2599,13 +2630,13 @@ let lastPokeSent=0;const pokedBy=new Map();
 // In-game poke: immediate nearby action; vibration depends on browser/device permission.
 const pokeQuick=document.createElement('button');
 pokeQuick.id='blPokeNearby';pokeQuick.type='button';pokeQuick.hidden=true;
-pokeQuick.style.cssText='position:absolute;z-index:14;left:50%;bottom:148px;transform:translateX(-50%);background:#ffdf71!important;color:#4a3400!important;border:2px solid #fff4b7!important;border-radius:24px;padding:9px 16px;font-size:13px;font-weight:850;box-shadow:0 4px 14px #001d3c99;max-width:75%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;touch-action:manipulation';
+pokeQuick.style.cssText='position:absolute;z-index:14;left:50%;bottom:115px;transform:translateX(-50%);background:#ffdf71!important;color:#4a3400!important;border:2px solid #fff4b7!important;border-radius:24px;padding:9px 16px;font-size:13px;font-weight:850;box-shadow:0 4px 14px #001d3c99;max-width:75%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;touch-action:manipulation';
 pokeQuick.style.display='none';game.append(pokeQuick);
 let pokeTargetId=null;
 pokeQuick.onclick=()=>{if(pokeTargetId)sendPoke(pokeTargetId)};
 function pokeDistance(p){const d=typeof diver!=='undefined'?diver:null;if(!d)return Infinity;const dx=(Number(p.x)||0)-d.x,dy=(Number(p.y)||0)-d.y,dz=((Number(p.z)||.55)-(d.z||.55))*110;return Math.hypot(dx,dy,dz)}
-function pokePossible(p){return Boolean(p&&p.id!==me&&Number(p.spot)===myPlace()&&p.diving&&status().diving&&pokeDistance(p)<230)}
-function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('상대 다이버와 함께 잠수 중 가까이 다가가야 해요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
+function pokePossible(p){if(!p||p.id===me||Number(p.spot)!==myPlace())return false;const myDive=Boolean(status().diving);if(Boolean(p.diving)!==myDive)return false;const dx=Math.abs((Number(p.x)||0)-diver.x);if(!myDive)return dx<800;return pokeDistance(p)<420}
+function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('같은 바다의 가까운 다이버에게 다가가 주세요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
 function receivePoke(m){if(m.fromId===me||!m.private)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||!pokePossible(sender))return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
 const senderName=String(m.fromNick||sender.nick||'다이버').slice(0,30);
 window.blPokeShiverUntil=performance.now()+830;
@@ -2663,7 +2694,7 @@ function renderOwnStaControls(){
  }else{const empty=document.createElement('p');empty.textContent='저장된 기록이 없어요.';section.append(empty)}
  box.querySelector('#blOwnStaControls')?.remove();section.id='blOwnStaControls';box.append(section);
 }
-function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 함께 잠수 중인 가까운 다이버에게만 가능 · 기기에 따라 진동이 제한될 수 있어요';box.append(help)}
+function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 가까이 있는 다이버에게 사용 가능 · 기기에 따라 진동이 제한될 수 있어요';box.append(help)}
 function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';addPokeButton(id);send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
@@ -2689,7 +2720,7 @@ function updateHitTargets(){
  }
  for(const [id,el] of clickTargets){if(!current.has(id)){el.remove();clickTargets.delete(id)}}
 }
-function updatePanel(){badge.textContent=me?'🟢 '+players.length+'명 접속 중':'⚪ 서버 연결 중';const count=panel.querySelector('.stat b');if(count)count.textContent=me?players.length+'명 접속 중':'연결 중';list.replaceChildren();for(const p of players){const b=document.createElement('button');b.textContent='🤿 '+p.nick+(p.id===me?' (나)':'')+' · '+place(p);b.onclick=()=>inspect(p.id);list.append(b)}}
+function updatePanel(){if(!onlinePopup.hidden)renderOnlineQuick();badge.textContent=me?'🟢 '+players.length+'명 접속 중':'⚪ 서버 연결 중';const count=panel.querySelector('.stat b');if(count)count.textContent=me?players.length+'명 접속 중':'연결 중';list.replaceChildren();for(const p of players){const b=document.createElement('button');b.textContent='🤿 '+p.nick+(p.id===me?' (나)':'')+' · '+place(p);b.onclick=()=>inspect(p.id);list.append(b)}}
 function start(){clearTimeout(reconnect);const proto=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(proto+'//'+location.host+'/')}catch{reconnect=setTimeout(start,delay);return}
  ws.onopen=()=>{delay=1000;send({type:'hello',nick:nick(),avatar:0,equipped:gear(),token:localStorage.getItem(key)||''})};
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
@@ -2714,7 +2745,7 @@ function updateNearbyPoke(){
  if(near)pokeQuick.textContent='👉 '+String(near.nick||'다이버').slice(0,16)+' 콕찌르기';
 }
 function track(){updateHitTargets();const now=performance.now();if(now-lastPokeDisplay>180){lastPokeDisplay=now;updateNearbyPoke()}requestAnimationFrame(track)}requestAnimationFrame(track);
-badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="dive"]')?.click();
+// The online badge opens the quick connected-divers list (handler above).
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
 })();
 </script>
