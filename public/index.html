@@ -2700,9 +2700,35 @@ const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
 function display2D(t){
  if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
  const own=diver,ownEq=gearState.equipped;
- for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
-   const q=coords(p);
-   try{window.blDrawingRemoteDiver=true;diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:(Number(p.swim)||0)};gearState.equipped=p.equipped||{};drawDiver(t)}catch(e){}finally{window.blDrawingRemoteDiver=false;diver=own;gearState.equipped=ownEq}
+ let visibleIndex=0;
+ for(const p of players){
+   if(p.id===me||Number(p.spot)!==myPlace()||!p.diving)continue;
+   const q=coords(p),originalScreen=worldToScreen(q.x,q.y,q.z);
+   const meScreen=worldToScreen(own.x,own.y,own.z);
+   const overlapping=Math.hypot(originalScreen.x-meScreen.x,originalScreen.y-meScreen.y)<66;
+   const outOfView=originalScreen.x<45||originalScreen.x>W-45||originalScreen.y<92||originalScreen.y>H-70;
+   const slot=visibleIndex++;
+   let screenX=originalScreen.x,screenY=originalScreen.y;
+   // Separate overlapping characters and keep distant divers discoverable at the screen edge.
+   if(overlapping){screenX=Math.min(W-70,Math.max(72,meScreen.x+((slot%2)?-1:1)*(94+Math.floor(slot/2)*38)));screenY=Math.min(H-80,Math.max(105,meScreen.y+20));}
+   else if(outOfView){screenX=Math.min(W-65,Math.max(65,originalScreen.x));screenY=Math.min(H-85,Math.max(115,originalScreen.y));}
+   const projected=overlapping||outOfView;
+   const oldCamX=cam.x,oldCamY=cam.y;
+   try{
+     window.blDrawingRemoteDiver=true;
+     // Adjust only the drawing camera, never the actual player or server coordinates.
+     if(projected){const scale=originalScreen.scale||1;cam.x=q.x-(screenX-W*(1-scale)/2)/scale;cam.y=q.y-(screenY-H*(1-scale)/2)/scale;}
+     diver={...own,x:q.x,y:q.y,z:q.z,dir:Number(p.dir)<0?-1:1,swim:Number(p.swim)||0};
+     gearState.equipped=p.equipped||{};
+     ctx.save();if(outOfView)ctx.globalAlpha=.78;
+     drawDiver(t);
+     ctx.restore();
+     ctx.save();ctx.font='bold 17px system-ui, sans-serif';ctx.textAlign='center';
+     const label=String(p.nick||'다이버').slice(0,16)+(outOfView?' · 멀리':'');
+     const width=Math.min(260,ctx.measureText(label).width+22),top=Math.max(24,screenY-76);
+     ctx.fillStyle='rgba(7,68,95,.86)';ctx.beginPath();ctx.roundRect(screenX-width/2,top-19,width,27,13);ctx.fill();
+     ctx.fillStyle='#fff';ctx.fillText(label,screenX,top);ctx.restore();
+   }catch(e){try{ctx.restore()}catch(_){}}finally{cam.x=oldCamX;cam.y=oldCamY;window.blDrawingRemoteDiver=false;diver=own;gearState.equipped=ownEq;}
  }
 }
 function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=290+(i%5)*105;blueDrawSurfacePeer(t,p,x)}}
