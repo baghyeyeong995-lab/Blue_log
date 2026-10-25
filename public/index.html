@@ -1988,7 +1988,7 @@ function preview(){const safe=escapeHTML(profile.nickname||'이름 없는 다이
 $('showPadi').onclick=()=>showTable('PADI');$('showAida').onclick=()=>showTable('AIDA');
 $('diverAgency').addEventListener('change',()=>{profile.certification='';fillCert();});
 $('diverNickname').value=profile.nickname;$('diverAgency').value=CHOICES[profile.agency]?profile.agency:'none';fillCert();
-$('saveProfile').onclick=()=>{profile={nickname:$('diverNickname').value.trim().slice(0,30),agency:$('diverAgency').value,certification:$('diverCertification').value};try{localStorage.setItem('ocean_quest_dive_profile_v1',JSON.stringify(profile));}catch(e){}preview();};
+$('saveProfile').onclick=()=>{profile={nickname:$('diverNickname').value.trim().slice(0,30),agency:$('diverAgency').value,certification:$('diverCertification').value};try{localStorage.setItem('ocean_quest_dive_profile_v1',JSON.stringify(profile));}catch(e){}window.BlueLogSync?.updateNickname?.(profile.nickname);preview();};
 $('viewProfile').onclick=()=>{preview();$('profilePreview').scrollIntoView({behavior:'smooth',block:'nearest'});};
 showTable('PADI');preview();
 })();
@@ -2314,8 +2314,8 @@ const badge=document.createElement('button');badge.id='blueLiveBadge';badge.text
 const layer=document.createElement('div');layer.id='blRemoteTouch';game.append(layer);
 const modal=document.createElement('div');modal.id='blProfile';modal.innerHTML='<button type="button" id="blClose">닫기 ✕</button><h3>🤿 다이버 프로필</h3><div id="blProfileContent"></div>';document.body.append(modal);document.getElementById('blClose').onclick=()=>modal.classList.remove('open');
 const list=document.createElement('div');list.id='blRemoteList';panel.append(list);
-const label=document.createElement('label');label.id='blShare';label.innerHTML='<input type="checkbox"> 스태틱(STA) 기록을 다른 다이버에게 공개';panel.append(label);
-const consent=label.querySelector('input');consent.checked=localStorage.getItem('blue_share_sta')==='yes';consent.onchange=()=>{localStorage.setItem('blue_share_sta',consent.checked?'yes':'no');syncSTA()};
+// All divers share their own STA summary by default; no visibility toggle.
+try{localStorage.setItem('blue_share_sta','yes')}catch(e){}
 const key='blue_log_live_token_v1';let ws=null,me=null,players=[],prev=null,delay=1000,lastAppearance='',reconnect=null;
 
 const chatBox=document.createElement('section');chatBox.id='blueChat';chatBox.innerHTML=`<div class="blChatHead"><b>💬 다이버 실시간 채팅</b><button type="button" id="blChatToggle">접기</button></div><div class="blChatTarget"><label for="blChatRecipient">대화 상대</label><select id="blChatRecipient"><option value="">🌍 같은 바다 전체</option></select></div><div id="blChatMessages" role="log" aria-live="polite"></div><form id="blChatForm"><input id="blChatInput" maxlength="220" autocomplete="off" placeholder="메시지를 입력하세요" aria-label="채팅 메시지"><button type="submit">전송</button></form><small>같은 바다 전체 채팅 또는 현재 접속한 다이버에게 1:1 메시지 · 현재 접속 중일 때만 전달</small>`;
@@ -2333,7 +2333,7 @@ const place=p=>String(p.spotName||('바다 '+(Number(p.spot)+1)))+' · '+(p.divi
 const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('place')?.value)||0;
 const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
 function statLog(){return Array.isArray(staEntries)?staEntries:[]}
-function syncSTA(){send({type:'sta',share:consent.checked,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
+function syncSTA(){send({type:'sta',share:true,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
 function renderOwnStaControls(){
  const box=document.getElementById('blProfileContent');if(!box||!me)return;
  const section=document.createElement('section');section.style.cssText='margin-top:12px;padding:10px;border:1px solid #83c6d9;border-radius:10px';
@@ -2391,7 +2391,7 @@ const tick=setInterval(()=>{if(ws?.readyState!==1)return;
  const q=(typeof diver!=='undefined'?diver:{x:620,y:122,z:.55});const d=status();send({type:'move',spot:myPlace(),spotName:typeof spots!=='undefined'?spots[myPlace()]?.name||'바다':'바다',x:q.x,y:q.y,z:q.z,dir:q.dir,swim:q.swim,navX:window.BL3DCamera?.x||0,navZ:window.BL3DCamera?.z||0,yaw:window.BL3DCamera?.yaw||0,diving:d.diving,depth:d.depth});
  const e=JSON.stringify(gear());if(e!==lastAppearance){lastAppearance=e;send({type:'appearance',avatar:0,equipped:gear()})}
 },250);
-window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA};
+window.BlueLogSync={draw2D:display2D,drawSurfacePeers:displaySurfacePeers,getPlayers:()=>players.filter(p=>p.id!==me&&Number(p.spot)===myPlace()),showProfile:inspect,syncSTA,updateNickname:(name)=>send({type:'profile',nick:String(name||'바다 탐험가').trim().slice(0,16)||'바다 탐험가'})};
 function track(){updateHitTargets();requestAnimationFrame(track)}requestAnimationFrame(track);
 badge.onclick=()=>document.querySelector('#oceanDock button[data-tab="social"]')?.click();
 window.addEventListener('pagehide',()=>{clearInterval(tick);clearTimeout(reconnect);ws?.close()});start();
