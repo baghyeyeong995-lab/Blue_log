@@ -1122,7 +1122,7 @@ function updatePlayer(dt){
   if(controls.left){diver.vx-=accel;diver.dir=-1}
   if(controls.right){diver.vx+=accel;diver.dir=1}
   // Reduced vertical steering only in 3D; 2D and horizontal travel stay unchanged.
-  const verticalAccel=is3DMove?accel*.062832:accel*.51408; // Manual ascent/descent 16% slower than previous version.
+  const verticalAccel=is3DMove?accel*.0502656:accel*.411264; // Manual ascent/descent 20% slower than previous version.
   if(session && controls.up) diver.vy-=verticalAccel;
   if(session && controls.down) diver.vy+=verticalAccel;
   if(session && controls.forward) diver.vz+=0.02;
