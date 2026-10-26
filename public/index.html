@@ -561,55 +561,73 @@ function blHolo(g,id,x,y,t=0){
  if(!entry||(!entry.holo&&!entry.pearl))return;
  const isHolo=!!entry.holo,isPearl=!!entry.pearl,isCrystal=!!entry.crystal,gold=/gold/.test(id||''),silver=/silver/.test(id||'');
  const cycle=t*.006+x*.12;
- const baseColors=isCrystal
-   ? ['#ffffff','#c9f6ff','#dfceff','#ffffff','#9ef2ff']
-   : isHolo
-     ? (gold?['#ffffff','#ffd96f','#ffb9e6','#97f4ff','#fff7c8']
-            :['#ffffff','#d5f6ff','#e8ccff','#b8ddff','#f6fbff'])
-     : (gold?['#fff6c0','#ffd86b','#fffdf3','#ffe7a8']
-            :['#ffffff','#ecf8ff','#c7e6ff','#f9fdff']);
  g.save();
  g.translate(x,y);
  g.rotate(-0.22);
+ const finPath=()=>{g.beginPath();g.moveTo(-15,-10);g.lineTo(0,-10);g.lineTo(18,12);g.lineTo(-11,12);g.closePath();};
+ if(isPearl){
+   const colors=gold?['#fff4a3','#ffce4a','#ffffff','#ff92d9','#85f4ff']:['#eaffff','#9cdffd','#f8c3ff','#ffffff','#a5ffe9'];
+   g.globalCompositeOperation='screen';
+   for(let n=0;n<5;n++){
+    const a=cycle+n*1.24,px=Math.sin(a)*11,py=Math.cos(a*.83)*7;
+    g.globalAlpha=.72+.25*Math.pow(Math.max(0,Math.sin(a)),2);g.fillStyle=colors[n];
+    g.shadowColor=colors[n];g.shadowBlur=7;g.beginPath();g.arc(px,py,n===0?3.7:2.2,0,Math.PI*2);g.fill();g.shadowBlur=0;
+    g.strokeStyle=colors[n];g.lineWidth=n===0?1.5:.8;
+    g.beginPath();g.moveTo(px-5,py);g.lineTo(px+5,py);g.moveTo(px,py-5);g.lineTo(px,py+5);g.stroke();
+   }
+   g.globalAlpha=.42;g.strokeStyle=colors[2];g.lineWidth=2.8;
+   g.beginPath();g.moveTo(-13+Math.sin(cycle)*5,-9);g.lineTo(13+Math.sin(cycle)*5,11);g.stroke();
+   g.restore();
+   return;
+ }
+ const baseColors=isCrystal
+   ? ['#ffffff','#d9f8ff','#d8d1ff','#ffffff','#9ef2ff']
+   : gold
+     ? ['#fff9cf','#ffe07a','#ffca66','#ffffff','#fff1b5']
+     : ['#ffffff','#edf8ff','#cfe8ff','#e6d6ff','#f8fdff'];
  g.globalCompositeOperation='screen';
- // soft body glow
- const halo=g.createLinearGradient(-18,-15,18,16);
- halo.addColorStop(0,baseColors[0]);halo.addColorStop(.35,baseColors[1]);halo.addColorStop(.68,baseColors[2]);halo.addColorStop(1,baseColors[3]);
- g.globalAlpha=isHolo?.28:.2;
- g.fillStyle=halo;
- g.beginPath();g.moveTo(-17,-11);g.lineTo(16,-7);g.lineTo(18,13);g.lineTo(-15,10);g.closePath();g.fill();
- // moving reflective bands (no star sparkles)
- const bandTotal=isCrystal?5:(isHolo?4:3);
+ finPath();
+ g.clip();
+ const base=g.createLinearGradient(-18,-12,18,12);
+ base.addColorStop(0,baseColors[0]);
+ base.addColorStop(.3,baseColors[1]);
+ base.addColorStop(.6,baseColors[2]);
+ base.addColorStop(1,baseColors[3]);
+ g.globalAlpha=isCrystal?.26:.2;
+ g.fillStyle=base;
+ finPath();
+ g.fill();
+ const bandTotal=isCrystal?5:4;
  for(let i=0;i<bandTotal;i++){
-   const span=40;
-   const slide=((cycle*22)+(i*12))%(span+26)-13;
-   const band=g.createLinearGradient(slide-20,-18,slide+16,18);
-   const tone=baseColors[i%baseColors.length];
+   const slide=((cycle*24)+(i*10))%54-18;
+   const tone=baseColors[(i+1)%baseColors.length];
+   const band=g.createLinearGradient(slide-16,-16,slide+14,16);
    band.addColorStop(0,'#ffffff00');
-   band.addColorStop(.22,'#ffffffd0');
+   band.addColorStop(.25,'#ffffffcc');
    band.addColorStop(.5,tone);
-   band.addColorStop(.78,'#ffffffd6');
+   band.addColorStop(.75,'#ffffffe0');
    band.addColorStop(1,'#ffffff00');
-   g.globalAlpha=isCrystal?.62:(isHolo?.52:.34);
+   g.globalAlpha=isCrystal?.72:.56;
    g.fillStyle=band;
    g.beginPath();
-   g.moveTo(slide-18,-15);g.lineTo(slide-6,-15);g.lineTo(slide+18,15);g.lineTo(slide+6,15);g.closePath();
+   g.moveTo(slide-16,-14);g.lineTo(slide-4,-14);g.lineTo(slide+18,14);g.lineTo(slide+6,14);g.closePath();
    g.fill();
  }
- // glossy sweep
- const sweep=g.createLinearGradient(-22+Math.sin(cycle)*10,-16,14+Math.sin(cycle)*10,14);
+ const sweep=g.createLinearGradient(-18+Math.sin(cycle)*12,-14,14+Math.sin(cycle)*12,14);
  sweep.addColorStop(0,'#ffffff00');
- sweep.addColorStop(.45,'#ffffffdd');
- sweep.addColorStop(.58,baseColors[gold?1:(silver?2:3)]||'#dff6ff');
+ sweep.addColorStop(.38,'#ffffff00');
+ sweep.addColorStop(.52,'#ffffffee');
+ sweep.addColorStop(.66,baseColors[gold?2:(silver?2:3)]||'#dff6ff');
+ sweep.addColorStop(.82,'#ffffffd6');
  sweep.addColorStop(1,'#ffffff00');
- g.globalAlpha=isCrystal?.75:(isHolo?.58:.4);
+ g.globalAlpha=isCrystal?.82:.64;
  g.fillStyle=sweep;
- g.beginPath();g.moveTo(-16,-12);g.lineTo(-2,-12);g.lineTo(18,12);g.lineTo(5,12);g.closePath();g.fill();
- // crisp reflective edge
- g.globalAlpha=isCrystal?.68:(isHolo?.46:.28);
- g.strokeStyle=baseColors[isCrystal?2:1];
- g.lineWidth=isCrystal?2.2:1.8;
- g.beginPath();g.moveTo(-15,-7+Math.sin(cycle)*1.2);g.lineTo(16,11+Math.sin(cycle)*1.2);g.stroke();
+ finPath();
+ g.fill();
+ g.globalAlpha=isCrystal?.42:.32;
+ g.strokeStyle=baseColors[gold?1:2];
+ g.lineWidth=1.6;
+ g.beginPath();g.moveTo(-14,-7+Math.sin(cycle)*1.1);g.lineTo(15,11+Math.sin(cycle)*1.1);g.stroke();
  g.restore();
 }
 // Keep reflective long fins alive in the equipment preview while the shop is visible.
