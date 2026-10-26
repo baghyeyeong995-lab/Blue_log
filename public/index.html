@@ -437,13 +437,43 @@ const GEAR_CATALOG=[
 let gearState={money:0,owned:[],equipped:{}};
 try{const saved=JSON.parse(localStorage.getItem('blue_cosmetics_v11')||'null');if(saved&&typeof saved==='object'){gearState={...gearState,...saved};gearState.owned=Array.isArray(saved.owned)?saved.owned:[];gearState.equipped=saved.equipped||{};}}catch(e){}
 const BL_VESSELS=['boat_small','boat_yacht','boat_cruise'];
+const blBoatXKeys={boat_small:'boatx_small',boat_yacht:'boatx_yacht',boat_cruise:'boatx_cruise'};
+if(!gearState.boatPositions||typeof gearState.boatPositions!=='object'||Array.isArray(gearState.boatPositions))gearState.boatPositions={};
+function blBoatDefaultX(index,total){return total===1?715:(index-(total-1)/2)*295+510}
+function blBoatX(id,index,total,remoteEquip=null){
+ const raw=remoteEquip?remoteEquip[blBoatXKeys[id]]:gearState.boatPositions[id];
+ const val=Number(raw);
+ return raw!==undefined&&raw!==null&&raw!==''&&Number.isFinite(val)?Math.max(180,Math.min(820,val)):blBoatDefaultX(index,total);
+}
+function blDisplayedBoats(){
+ const mine=blActiveBoats().map((id,i,arr)=>({id,x:blBoatX(id,i,arr.length),owner:null,mine:true,key:'mine:'+id}));
+ const peers=window.BlueLogSync?.getPlayers?.()||[];
+ for(const p of peers){
+  const eq=p.equipped||{};
+  const ids=String(eq.vessel_list||'').split('-').filter(id=>BL_VESSELS.includes(id));
+  if(!ids.length&&BL_VESSELS.includes(eq.vessel))ids.push(eq.vessel);
+  for(const [i,id] of [...new Set(ids)].entries()){
+   mine.push({id,x:blBoatX(id,i,ids.length,eq),owner:String(p.nick||'다이버').slice(0,14),mine:false,key:'peer:'+p.id+':'+id});
+  }
+ }
+ return mine;
+}
+
 // Separate placement from ownership. Legacy single-boat saves migrate automatically.
 if(!Array.isArray(gearState.activeVessels)) gearState.activeVessels=BL_VESSELS.filter(id=>gearState.owned.includes(id));
 gearState.activeVessels=[...new Set(gearState.activeVessels.filter(id=>BL_VESSELS.includes(id)&&gearState.owned.includes(id)))];
 function blActiveBoats(){return gearState.activeVessels.filter(id=>gearState.owned.includes(id))}
-function blSyncBoats(){gearState.equipped.vessel=blActiveBoats()[0]||null;gearState.equipped.vessels=blActiveBoats();}
+function blSyncBoats(){
+ const ids=blActiveBoats();
+ gearState.equipped.vessel=ids[0]||null;
+ gearState.equipped.vessels=ids;
+ gearState.equipped.vessel_list=ids.join('-');
+ for(const id of BL_VESSELS){const val=gearState.boatPositions[id];const key=blBoatXKeys[id];if(Number.isFinite(Number(val))&&val!==undefined&&val!==null)gearState.equipped[key]=String(Math.round(Math.max(180,Math.min(820,Number(val)))));else delete gearState.equipped[key];}
+}
 blSyncBoats();
 function saveGear(){blSyncBoats();try{localStorage.setItem('blue_cosmetics_v11',JSON.stringify(gearState))}catch(e){}}
+// Persist server-compatible position/list fields before the multiplayer hello handshake.
+saveGear();
 try{if(!localStorage.getItem('blue_coin_auto_credit_v8')){gearState.money=(Number(gearState.money)||0)+(Math.max(0,Number(inventory.coin)||0)*12);saveGear();localStorage.setItem('blue_coin_auto_credit_v8','yes')}}catch(e){}
 function renderShop(){
  const wallet=document.getElementById('wallet');if(wallet)wallet.textContent=(gearState.money||0).toLocaleString('ko-KR')+'원';
@@ -549,6 +579,21 @@ function renderShop(){
    const b=document.createElement('button');b.type='button';b.style.cssText='min-height:68px;text-align:left;padding:10px 8px;background:'+(enabled?'#b9f2de':'#e7f8ff')+';color:#17485f;font-size:12px';
    b.textContent=g.symbol+' '+g.name+'\n'+(enabled?(boat?'✅ 띄운 상태 · 회수':'✅ 착용 중 · 벗기'):(boat?'🚤 바다에 띄우기':'🤿 착용하기'));
    b.style.whiteSpace='pre-line';b.onclick=()=>{if(boat){gearState.activeVessels=enabled?blActiveBoats().filter(id=>id!==g.id):[...blActiveBoats(),g.id]}else if(enabled)delete gearState.equipped[g.cat];else gearState.equipped[g.cat]=g.id;saveGear();renderShop();drawCharacterPreview();notify(g.name+(enabled?' 해제 완료':' 적용 완료'))};ownedList.appendChild(b)
+  }
+  const ownedBoats=BL_VESSELS.filter(id=>gearState.owned.includes(id));
+  if(ownedBoats.length){
+   const movePanel=document.createElement('div');movePanel.style.cssText='background:#e8f8ff;border:1px solid #85c6df;border-radius:13px;padding:12px;margin:12px 0';
+   const head=document.createElement('strong');head.textContent='🚤 내 배 위치 이동';movePanel.append(head);
+   const how=document.createElement('p');how.textContent='수면에서 내 배를 손가락으로 끌어 이동하거나 아래 슬라이더로 위치를 조절하세요. 다른 다이버에게도 위치가 공유돼요.';how.style.cssText='font-size:12px;color:#3c687e;margin:7px 0 10px';movePanel.append(how);
+   for(const id of ownedBoats){
+    const item=GEAR_CATALOG.find(g=>g.id===id);
+    const line=document.createElement('label');line.style.cssText='display:block;margin:9px 0;font-weight:700;font-size:12px;color:#154b65';line.textContent=(item?.symbol||'🚤')+' '+(item?.name||id);
+    const input=document.createElement('input');input.type='range';input.min='180';input.max='820';input.step='5';input.value=String(blBoatX(id,ownedBoats.indexOf(id),ownedBoats.length));input.style.cssText='display:block;width:100%;height:32px;accent-color:#0089b5';
+    input.oninput=()=>{gearState.boatPositions[id]=Number(input.value);saveGear()};
+    input.onchange=()=>notify((item?.name||'배')+' 위치를 저장했어요.');
+    line.append(input);movePanel.append(line);
+   }
+   ownedBody.append(movePanel);
   }
  }
 }
@@ -1333,16 +1378,10 @@ function blBoatCoinTick(t){
  for(let i=blBoatCoins.length-1;i>=0;i--)if(t-blBoatCoins[i].created>2200)blBoatCoins.splice(i,1);
  if(session||phase!=='surface'){blBoatNearbyHint(false);return;}
  const swimmer=surfacePosition();
- if(Math.abs(swimmer.x-710)>90){blBoatNearbyHint(false);return;}
  const nearby=window.BlueLogSync?.getPlayers?.()||[];
  const connected=!!window.BlueLogSync?.isConnected?.();
- const allVessels=[];
- // In multiplayer, include each currently present surface owner's equipped boat.
- if(connected){
-   for(const p of nearby){if(!p.diving){const ids=Array.isArray(p.equipped?.vessels)?p.equipped.vessels:(p.equipped?.vessel?[p.equipped.vessel]:[]);for(const id of ids.filter(id=>BL_VESSELS.includes(id)))allVessels.push({key:'peer:'+p.id+':'+id,id,owner:String(p.nick||'다이버')});}}
- }
- for(const id of blActiveBoats())allVessels.push({key:'mine:'+id,id,owner:'내 배'});
- blBoatNearbyHint(allVessels.some(boat=>['boat_small','boat_yacht','boat_cruise'].includes(boat.id)));
+ const allVessels=blDisplayedBoats().filter(boat=>Math.abs(swimmer.x-boat.x)<(boat.id==='boat_cruise'?210:boat.id==='boat_yacht'?175:145)).map(boat=>({...boat,owner:boat.mine?'내 배':boat.owner}));
+ blBoatNearbyHint(allVessels.length>0);
  const activeKeys=new Set();
  for(const boat of allVessels){
    const tier=boat.id==='boat_cruise'?3:boat.id==='boat_yacht'?2:boat.id==='boat_small'?1:0;
@@ -1355,7 +1394,7 @@ function blBoatCoinTick(t){
    blVesselPaymentClocks.set(boat.key,t);
    const count=tier===3?8:tier===2?4:1;
    blCreditBoatIncome(count*(tier===3?24:tier===2?18:12),count,boat.owner);
-   blShowBoatRewardCoins(count,t);
+   blShowBoatRewardCoins(count,t,boat.x);
  }
  for(const key of blVesselPaymentClocks.keys())if(!activeKeys.has(key))blVesselPaymentClocks.delete(key);
 }
@@ -1372,8 +1411,8 @@ function blCreditBoatIncome(money,count,owner){
  const t=performance.now();
  if(t-blBoatAutoCollectNoticeAt>1200){blBoatAutoCollectNoticeAt=t;notify('🪙 '+owner+' 근처 수면 보상 +'+money.toLocaleString('ko-KR')+'원')}
 }
-function blShowBoatRewardCoins(amount,t){
- for(let i=0;i<Math.min(amount,12);i++)blBoatCoins.push({x:710+(Math.random()-.5)*130,created:t+i*30});
+function blShowBoatRewardCoins(amount,t,boatX=710){
+ for(let i=0;i<Math.min(amount,12);i++)blBoatCoins.push({x:boatX+(Math.random()-.5)*130,created:t+i*30});
  if(blBoatCoins.length>75)blBoatCoins.splice(0,blBoatCoins.length-75);
 }
 function blReceiveVesselIncome(message){
@@ -1434,12 +1473,13 @@ function drawSurface(t){
     });
   }
  // Premium vessels: distinct hulls, glazing, rails, decks, wakes and running lights.
- const activeBoats=blActiveBoats();
- for(const [boatIndex,boatId] of activeBoats.entries()){
+ const activeBoats=blDisplayedBoats();
+ for(const [boatIndex,boatData] of activeBoats.entries()){
+ const boatId=boatData.id;
  const vessel=GEAR_CATALOG.find(g=>g.id===boatId);if(!vessel)continue;
   const tier=vessel.id==='boat_cruise'?3:vessel.id==='boat_yacht'?2:1;
   const beam=tier===3?340:tier===2?254:180, height=tier===3?110:tier===2?77:51;
-  ctx.save();ctx.translate(activeBoats.length===1?715:(boatIndex-(activeBoats.length-1)/2)*295+510,349+Math.sin(t*.0015+boatIndex)*2.3);
+  ctx.save();ctx.translate(boatData.x,349+Math.sin(t*.0015+boatIndex)*2.3);
   ctx.shadowColor='#023e68a8';ctx.shadowBlur=17;ctx.shadowOffsetY=8;
   // Wake follows the hull instead of floating in the sky.
   ctx.strokeStyle='#e9ffffbd';ctx.lineWidth=3;
@@ -1471,7 +1511,7 @@ function drawSurface(t){
   ctx.fillStyle='#eaffff';ctx.beginPath();ctx.arc(beam*.46,-14,5,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#fd5353';ctx.beginPath();ctx.arc(-beam*.46,-14,5,0,Math.PI*2);ctx.fill();
   // Personalized nameplate; use saved profile nickname, never render unsanitized HTML.
-  let boatNick='바다 탐험가';try{const d=JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}');boatNick=String(d.nickname||document.getElementById('diverNickname')?.value||boatNick).trim().slice(0,14)||boatNick}catch(e){}
+  let boatNick=boatData.owner||'바다 탐험가';if(boatData.mine)try{const d=JSON.parse(localStorage.getItem('ocean_quest_dive_profile_v1')||'{}');boatNick=String(d.nickname||document.getElementById('diverNickname')?.value||boatNick).trim().slice(0,14)||boatNick}catch(e){}
   ctx.save();ctx.font='bold '+(tier===3?15:13)+'px system-ui';const tagW=Math.min(184,ctx.measureText(boatNick).width+23);ctx.fillStyle='#093b58e8';ctx.strokeStyle=tier===3?'#e9c86a':'#b8e5ef';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-tagW/2,-height-38,tagW,22,5);ctx.fill();ctx.stroke();ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.fillText(boatNick,0,-height-22);ctx.restore();
   // Dynamic glass highlight: expensive vessels have more pronounced polish.
   ctx.globalAlpha=.16+.16*(1+Math.sin(t*.003))/2;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(-beam*.26,-height+3);ctx.lineTo(-beam*.18,-height+3);ctx.lineTo(beam*.10,-12);ctx.lineTo(beam*.03,-12);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
@@ -1511,6 +1551,31 @@ const blueCoinHud=document.createElement('span');blueCoinHud.id='blCoinHud';blue
 let last2DFrame=0;function render(ts){if(document.body.classList.contains('ocean-tab-open')){last=ts;requestAnimationFrame(render);return;}if(ts-last2DFrame<33){requestAnimationFrame(render);return;}last2DFrame=ts; const dt=Math.min(.05,(ts-last)/1000||0); last=ts; if(session) elapsed=(performance.now()-start)/1000; else restElapsed=Math.max(0,(Date.now()-restStartedWall)/1000); updatePlayer(dt); updateEntities(dt); checkGameAlarms(); if(!session){updateCollectButton();drawSurface(ts);window.BlueLogSync?.drawSurfacePeers?.(ts);window.visibleEntities=[];updateHUD();updateAudio();requestAnimationFrame(render);return;} drawBackground(ts); drawTerrain(ts); draw2DExplorationSpot(ts); draw2DSeaCave(ts); drawBubbles(ts);
   const visible=[]; const layers=[]; for(const c of collectibles){ const r=drawCollectible(c,ts); if(r) layers.push({z:c.z||0.5,fn:null,data:r}); } for(const o of objects){ const hit=drawFish(o,ts); if(hit) visible.push(hit);} window.visibleEntities=visible; drawDiver(ts);blDrawTorchBeam(ts);window.BlueLogSync?.draw2D(ts);drawPetCompanion(ts);autoPetCollect(ts);updateCollectButton();
   const d=depthMeters(); if(d>0){ ctx.fillStyle=`rgba(0,25,48,${clamp(d/80,0,.36)})`; ctx.fillRect(0,0,W,H);} if(d>10){ ctx.fillStyle=`rgba(0,12,28,${clamp((d-10)/60,0,.14)})`; ctx.fillRect(0,0,W,H);} updateHUD(); updateAudio(); requestAnimationFrame(render); }
+
+// Drag only owned, launched boats on the 2D surface. Existing game gestures keep working elsewhere.
+let blBoatDrag=null;
+function blBoatPointerXY(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+canvas.addEventListener('pointerdown',e=>{
+ if(session||phase!=='surface'||e.button>0)return;
+ const {x,y}=blBoatPointerXY(e);
+ const matches=blDisplayedBoats().filter(v=>v.mine).reverse();
+ const chosen=matches.find(v=>{const tier=v.id==='boat_cruise'?3:v.id==='boat_yacht'?2:1;return Math.abs(x-v.x)<(tier===3?170:tier===2?128:90)&&y>349-(tier===3?178:tier===2?145:115)&&y<395});
+ if(!chosen)return;
+ blBoatDrag={id:chosen.id,pointerId:e.pointerId};
+ try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+ e.preventDefault();e.stopImmediatePropagation();
+},true);
+canvas.addEventListener('pointermove',e=>{
+ if(!blBoatDrag||blBoatDrag.pointerId!==e.pointerId)return;
+ gearState.boatPositions[blBoatDrag.id]=Math.round(Math.max(180,Math.min(820,blBoatPointerXY(e).x)));
+ blSyncBoats();e.preventDefault();e.stopImmediatePropagation();
+},true);
+for(const ev of ['pointerup','pointercancel'])canvas.addEventListener(ev,e=>{
+ if(!blBoatDrag||blBoatDrag.pointerId!==e.pointerId)return;
+ const item=GEAR_CATALOG.find(g=>g.id===blBoatDrag.id);
+ saveGear();blBoatDrag=null;notify((item?.name||'배')+' 위치를 옮겼어요.');
+ e.preventDefault();e.stopImmediatePropagation();
+},true);
 
 canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY}});
 canvas.addEventListener('pointerup',e=>{
@@ -2646,6 +2711,7 @@ translateOptions();
 .blRemoteHit{position:absolute;transform:translate(-50%,-50%);width:80px;height:112px;pointer-events:auto;border:0;background:transparent;cursor:pointer}
 .blRemoteHit .blLabel{position:absolute;left:50%;bottom:0;transform:translateX(-50%);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;background:#e7ffffec;color:#06344e;border:1px solid #8fcddb;border-radius:15px;padding:4px 8px;font:bold 11px system-ui;box-shadow:0 2px 7px #003c5a66}
 #blRemoteTouch.three .blRemoteHit{height:94px}
+#blRemoteTouch.underwater .blRemoteHit .blLabel{display:none!important}
 #blProfile{display:none;position:fixed;z-index:150;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,90vw);max-height:75vh;overflow:auto;padding:18px;background:#edfdff;border:2px solid #71c4d5;border-radius:19px;box-shadow:0 17px 60px #002b5588;color:#164c64;font:14px system-ui}
 #blProfile.open{display:block}#blProfile button{float:right;border:0;border-radius:9px;background:#a6eaff;padding:7px 11px}
 #blRemoteList>button{display:block;width:100%;padding:9px;margin-top:6px;text-align:left}
@@ -2728,9 +2794,10 @@ function pokePossible(p){
  // Keep the button close to the other diver; do not show it across the whole ocean.
  const dx=(Number(p.x)||0)-diver.x;
  const dz=((Number(p.z)||.55)-(Number(diver.z)||.55))*110;
- if(!own.diving)return Math.hypot(dx,dz)<200;
+ // ~110px on a 1000px surface scene: the same criterion on both phones.
+ if(!own.diving)return Math.hypot(dx,dz)<770;
  const depthDifference=Math.abs((Number(p.depth)||0)-own.depth);
- return Math.hypot(dx,dz)<215&&depthDifference<6;
+ return Math.hypot(dx,dz)<600&&depthDifference<9;
 }
 function sendPoke(id){const p=players.find(v=>v.id===id);if(!pokePossible(p)){notify('같은 바다의 가까운 다이버에게 다가가 주세요.');return}if(!me||ws?.readyState!==WebSocket.OPEN){notify('실시간 연결이 필요해요.');return}if(Date.now()-lastPokeSent<950){notify('잠깐만! 1초 뒤 다시 쿡찌르기 할 수 있어요.');return}lastPokeSent=Date.now();send({type:'chat',to:id,text:pokeTag});notify('👉 '+p.nick+'님 쿡!')}
 function receivePoke(m){if(m.fromId===me||!m.private||!m.fromId)return;const sender=players.find(p=>p.id===m.fromId);if(!sender||Number(sender.spot)!==myPlace())return;const now=Date.now();if(now-(pokedBy.get(m.fromId)||0)<900)return;pokedBy.set(m.fromId,now);
@@ -2771,7 +2838,7 @@ const nick=()=>String(document.getElementById('diverNickname')?.value||'바다 �
 const send=o=>{if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o))};
 const place=p=>String(p.spotName||('바다 '+(Number(p.spot)+1)))+' · '+(p.diving?'수중 '+(Number(p.depth)||0).toFixed(1)+'m':'수면');
 const myPlace=()=>typeof idx!=='undefined'?idx:Number(document.getElementById('place')?.value)||0;
-const status=()=>({diving:typeof depthMeters==='function'&&depthMeters()>=0.5,depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
+const status=()=>({diving:typeof session!=='undefined'&&Boolean(session),depth:typeof depthMeters==='function'?Math.round(depthMeters()*10)/10:0});
 function statLog(){return Array.isArray(staEntries)?staEntries:[]}
 function syncSTA(){send({type:'sta',share:true,log:statLog().map(v=>({seconds:Number(v.seconds)||0,at:v.at||v.date||''})).slice(-150)})}
 function renderOwnStaControls(){
@@ -2793,7 +2860,9 @@ function renderOwnStaControls(){
 function addPokeButton(id){const box=document.getElementById('blProfileContent');if(!box)return;box.querySelector('#blPokeAction')?.remove();const p=players.find(q=>q.id===id);if(!p||p.id===me)return;const b=document.createElement('button');b.type='button';b.id='blPokeAction';b.textContent='👉 쿡찌르기';b.disabled=!pokePossible(p);b.style.cssText='float:none;width:100%;margin:10px 0;padding:11px;font-weight:800;background:#ffdc6e;color:#56400b;border:1px solid #d1a22f';b.onclick=()=>{sendPoke(id);b.disabled=true;setTimeout(()=>{b.disabled=!pokePossible(players.find(q=>q.id===id))},1100)};box.append(b);const help=document.createElement('p');help.style.cssText='clear:both;color:#587083;font-size:11px';help.textContent='같은 바다에서 가까이 있는 다이버에게 사용 가능 · 기기에 따라 진동이 제한될 수 있어요';box.append(help)}
 function inspect(id){const p=players.find(q=>q.id===id);if(chatTo){chatRoster();chatTo.value=id;chatBox.classList.remove('collapsed');}modal.classList.add('open');document.getElementById('blProfileContent').textContent=(p?.nick||'다이버')+' · 기록 조회 중';addPokeButton(id);send({type:'inspect',id})}
 const coords=p=>({x:Number(p.x)||620,y:Number(p.y)||122,z:Number(p.z)||.55});
+const renderedPeerPositions=new Map();
 function display2D(t){
+ renderedPeerPositions.clear();
  if(typeof diver==='undefined'||typeof worldToScreen!=='function'||typeof drawDiver!=='function'||typeof gearState==='undefined')return;
  const own=diver,ownEq=gearState.equipped;
  let visibleIndex=0;
@@ -2809,6 +2878,7 @@ function display2D(t){
    if(overlapping){screenX=Math.min(W-70,Math.max(72,meScreen.x+((slot%2)?-1:1)*(94+Math.floor(slot/2)*38)));screenY=Math.min(H-80,Math.max(105,meScreen.y+20));}
    else if(outOfView){screenX=Math.min(W-65,Math.max(65,originalScreen.x));screenY=Math.min(H-85,Math.max(115,originalScreen.y));}
    const projected=overlapping||outOfView;
+   renderedPeerPositions.set(p.id,{x:screenX,y:screenY});
    const oldCamX=cam.x,oldCamY=cam.y;
    try{
      window.blDrawingRemoteDiver=true;
@@ -2827,16 +2897,28 @@ function display2D(t){
    }catch(e){try{ctx.restore()}catch(_){}}finally{cam.x=oldCamX;cam.y=oldCamY;window.blDrawingRemoteDiver=false;diver=own;gearState.equipped=ownEq;}
  }
 }
-function displaySurfacePeers(t){if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;for(const [i,p] of players.entries()){if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;const x=290+(i%5)*105;blueDrawSurfacePeer(t,p,x)}}
+function displaySurfacePeers(t){
+ if(typeof blueDrawSurfacePeer!=='function'||typeof diver==='undefined')return;
+ for(const p of players){
+  if(p.id===me||Number(p.spot)!==myPlace()||p.diving)continue;
+  // Match the local swimmer's surfacePosition() formula, not arbitrary slot numbers.
+  const x=110+(Number(p.x||620)-40)/(5600-80)*(1000-220);
+  blueDrawSurfacePeer(t,p,x);
+ }
+}
 const clickTargets=new Map();
 function updateHitTargets(){
- const current=new Set();const three=game.classList.contains('is3d');layer.classList.toggle('three',three);
+ const current=new Set();const three=game.classList.contains('is3d');layer.classList.toggle('three',three);layer.classList.toggle('underwater',!three&&typeof session!=='undefined'&&Boolean(session));
  for(const p of players){if(p.id===me||Number(p.spot)!==myPlace())continue;
   current.add(p.id);let el=clickTargets.get(p.id);if(!el){el=document.createElement('button');el.type='button';el.className='blRemoteHit';el.innerHTML='<span class="blLabel"></span>';el.onclick=()=>inspect(p.id);layer.append(el);clickTargets.set(p.id,el)}
   el.querySelector('span').textContent=p.nick;let pos=null;
   if(three){pos=window.BlueLog3DPosition?.[p.id]||null;}else if(typeof worldToScreen==='function'){
-    const q=coords(p),a=typeof session!=='undefined'&&!session?(!p.diving?{x:290+(players.filter(v=>v.id!==me&&Number(v.spot)===myPlace()&&!v.diving).findIndex(v=>v.id===p.id)%5)*105,y:367}:null):worldToScreen(q.x,q.y,q.z),c=document.getElementById('sea');
-    if(c)pos={x:(a.x/c.width)*(c.clientWidth||game.clientWidth)+(c.offsetLeft||0),y:(a.y/c.height)*(c.clientHeight||game.clientHeight)+(c.offsetTop||0)};
+    const q=coords(p),isSurface=typeof session!=='undefined'&&!session;
+    let a=null;
+    if(isSurface){if(!p.diving)a={x:110+(q.x-40)/(5600-80)*780,y:367};}
+    else if(p.diving)a=renderedPeerPositions.get(p.id)||worldToScreen(q.x,q.y,q.z);
+    const c=document.getElementById('sea');
+    if(c&&a)pos={x:(a.x/c.width)*(c.clientWidth||game.clientWidth)+(c.offsetLeft||0),y:(a.y/c.height)*(c.clientHeight||game.clientHeight)+(c.offsetTop||0)};
   }
   if(pos&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&pos.x>=0&&pos.x<=game.clientWidth&&pos.y>=0&&pos.y<=game.clientHeight){el.style.display='block';el.style.left=pos.x+'px';el.style.top=pos.y+'px'}else{el.style.display='none'}
  }
